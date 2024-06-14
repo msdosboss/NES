@@ -1,11 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "6502.h"
 
-struct CPU{
+/*struct CPU{
 	unsigned char accumulator, x, y, processorStatus;
 	unsigned char memMap[65536];
 	unsigned char *programCounter;
-};
+};*/
 
 void zeroFlag(struct CPU *cpu, char reg){
 	if(reg == 0){
@@ -26,9 +25,79 @@ void negativeFlag(struct CPU *cpu, char reg){
 
 }
 
+unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){
+	unsigned short address = cpu->memMap[*(startingPoint + sizeof(unsigned char))];	//putting the 2 arg byte in front because this is little eddien 
+	address = address << 8;	//making room for the first arg
+	address = address | cpu->memMap[*(startingPoint)];	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
+	return address;
+}
+
 void lda(struct CPU *cpu){
-	unsigned char arg = *(cpu->programCounter);
-	cpu->accumulator = arg;
+	unsigned char arg;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0xa9:{	//immediate
+			arg = *(cpu->programCounter);
+			cpu->accumulator = arg;
+			break;
+		}		
+
+		case 0xa5:{	//zero page
+			arg = cpu->memMap[*(cpu->programCounter)];
+			cpu->accumulator = arg;
+			break;
+		}
+		
+		case 0xb5:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			arg = cpu->memMap[address];
+			cpu->accumulator = arg;
+			break;
+		}
+		
+		case 0xad:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address];
+			cpu->accumulator = arg;
+			break;
+		}
+
+		case 0xbd:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address + cpu->x];	//this is what makes it different from absolute
+			cpu->accumulator = arg;
+			break;
+		}
+
+		case 0xb9:{	//absolute,Y
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address + cpu->y];	//this is what makes it different from absolute
+			cpu->accumulator = arg;
+			break;
+		}
+		
+		case 0xa1:{	//(indirect,X)
+			unsigned char indirectAddress = *(cpu->programCounter);
+			indirectAddress = indirectAddress + cpu->x;
+			unsigned short address = absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+			arg = cpu->memMap[address];
+			cpu->accumulator = arg;
+			break;
+		}
+
+		case 0xb1:{	//(indirect,Y)
+			unsigned char indirectAddress = *(cpu->programCounter);
+			indirectAddress = indirectAddress + cpu->y;
+			unsigned short address = absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+			arg = cpu->memMap[address];
+			cpu->accumulator = arg;
+			break;
+		}
+
+		default:{
+			printf("instruction %x is not part of LDA", *(cpu->programCounter - sizeof(unsigned char)));
+		}
+			
+	}
 	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 	
 	zeroFlag(cpu, cpu->accumulator);
@@ -63,20 +132,35 @@ void cpuLoop(struct CPU *cpu){
 	while(*(cpu->programCounter) != 0){
 		switch(*(cpu->programCounter)){
 			case 0xa9:
+			case 0xa5:
+			case 0xb5:
+			case 0xad:
+			case 0xbd:
+			case 0xb9:
+			case 0xa1:
+			case 0xb1:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				lda(cpu);
+				break;
+			}
 			
-			case 0xaa:
+			case 0xaa:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				tax(cpu);
-			
-			case 0xe8:
+				break;
+			}
+
+			case 0xe8:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				inx(cpu);
-			
-			default:
+				break;
+			}
+
+			default:{
 				printf("%x instructions does not exist yet\n", *(cpu->programCounter));
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				break;
+			}
 		}
 	}
 }
@@ -88,7 +172,7 @@ int main(){
 
 	struct CPU cpu;	
 
-	cpu.programCounter = &(cpu.memMap[0x600]);
+	cpu.programCounter = &(cpu.memMap[0x8000]);
 	
 	stackPointer = &(cpu.memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
 
