@@ -237,7 +237,7 @@ void cpuLoop(struct CPU *cpu){
 			case 0xb9:
 			case 0xa1:
 			case 0xb1:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//I do understand that this is equivalent to cpu->programCounter++; because sizeof(unsigned char) == 1 I think this is more explict though
 				lda(cpu);
 				break;
 			}
