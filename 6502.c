@@ -25,7 +25,7 @@ void negativeFlag(struct CPU *cpu, char reg){
 
 }
 
-unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){
+unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){	//this is kind of a bad name because it's used in indirect address mode as well
 	unsigned short address = *(startingPoint + sizeof(unsigned char));	//putting the 2 arg byte in front because this is little eddien 
 	address = address << 8;	//making room for the first arg
 	address = address | *(startingPoint);	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
@@ -115,6 +115,33 @@ void tax(struct CPU *cpu){
 	
 }
 
+void tay(struct CPU *cpu){
+	cpu->y = cpu->accumulator;
+	
+	zeroFlag(cpu, cpu->y);
+	
+	negativeFlag(cpu, cpu->y);
+	
+}
+
+void txa(struct CPU *cpu){
+	cpu->accumulator = cpu->x;
+	
+	zeroFlag(cpu, cpu->accumulator);
+	
+	negativeFlag(cpu, cpu->accumulator);
+	
+}
+
+void tya(struct CPU *cpu){
+	cpu->accumulator = cpu->y;
+	
+	zeroFlag(cpu, cpu->accumulator);
+	
+	negativeFlag(cpu, cpu->accumulator);
+	
+}
+
 void inx(struct CPU *cpu){
 	cpu->x++;
 
@@ -150,6 +177,24 @@ void cpuLoop(struct CPU *cpu){
 				tax(cpu);
 				break;
 			}
+			
+			case 0xa8:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				tay(cpu);
+				break;
+			}
+			
+			case 0x8a:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				txa(cpu);
+				break;
+			}
+
+			case 0x98:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				tya(cpu);
+				break;
+			}			
 
 			case 0xe8:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
@@ -166,7 +211,7 @@ void cpuLoop(struct CPU *cpu){
 	}
 }
 
-/*int main(){	
+int main(){	
 	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\n'};
 	
 	unsigned char *stackPointer;
@@ -185,4 +230,4 @@ void cpuLoop(struct CPU *cpu){
 	printf("x = %x\n", cpu.x);
 	printf("processorStatus = %d\n", cpu.processorStatus);
 	
-}*/
+}
