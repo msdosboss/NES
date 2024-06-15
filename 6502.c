@@ -16,7 +16,7 @@ void zeroFlag(struct CPU *cpu, char reg){
 }
 
 void negativeFlag(struct CPU *cpu, char reg){
-	if(reg & 0b10000000 != 0){
+	if((reg & 0b10000000) != 0){
 		cpu->processorStatus = cpu->processorStatus | 0b10000000;
 	}
 	else{
@@ -26,9 +26,9 @@ void negativeFlag(struct CPU *cpu, char reg){
 }
 
 unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){
-	unsigned short address = cpu->memMap[*(startingPoint + sizeof(unsigned char))];	//putting the 2 arg byte in front because this is little eddien 
+	unsigned short address = *(startingPoint + sizeof(unsigned char));	//putting the 2 arg byte in front because this is little eddien 
 	address = address << 8;	//making room for the first arg
-	address = address | cpu->memMap[*(startingPoint)];	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
+	address = address | *(startingPoint);	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
 	return address;
 }
 
@@ -94,7 +94,8 @@ void lda(struct CPU *cpu){
 		}
 
 		default:{
-			printf("instruction %x is not part of LDA", *(cpu->programCounter - sizeof(unsigned char)));
+			printf("instruction %x is not part of LDA\n", *(cpu->programCounter - sizeof(unsigned char)));
+			break;
 		}
 			
 	}
@@ -165,12 +166,12 @@ void cpuLoop(struct CPU *cpu){
 	}
 }
 
-int main(){	
+/*int main(){	
 	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\n'};
 	
 	unsigned char *stackPointer;
 
-	struct CPU cpu;	
+	struct CPU cpu = {0};
 
 	cpu.programCounter = &(cpu.memMap[0x8000]);
 	
@@ -182,4 +183,6 @@ int main(){
 
 	printf("accumulator = %x\n", cpu.accumulator);
 	printf("x = %x\n", cpu.x);
-}
+	printf("processorStatus = %d\n", cpu.processorStatus);
+	
+}*/
