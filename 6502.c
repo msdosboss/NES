@@ -241,7 +241,20 @@ void cpuLoop(struct CPU *cpu){
 				lda(cpu);
 				break;
 			}
-			
+		
+			case 0x29:
+			case 0x25:			
+			case 0x35:			
+			case 0x2d:			
+			case 0x3d:			
+			case 0x39:			
+			case 0x21:			
+			case 0x31:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				and(cpu);
+				break;
+			}			
+	
 			case 0xaa:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				tax(cpu);
