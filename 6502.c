@@ -32,6 +32,80 @@ unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){	/
 	return address;
 }
 
+unsigned short indirectXAddress(struct CPU *cpu){
+	unsigned char indirectAddress = *(cpu->programCounter);
+	indirectAddress = indirectAddress + cpu->x;
+	return absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+}
+
+unsigned short indirectYAddress(struct CPU *cpu){
+	unsigned char indirectAddress = *(cpu->programCounter);
+	indirectAddress = indirectAddress + cpu->y;
+	return absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+}
+
+void and(struct CPU *cpu){
+	unsigned char arg;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x29:{	//immediate
+			arg = *(cpu->programCounter);
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		
+		case 0x25:{	//zero page
+			arg = cpu->memMap[*(cpu->programCounter)];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+
+		case 0x35:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			arg = cpu->memMap[address];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		case 0x2d:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		
+		case 0x3d:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address + cpu->x];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		
+		case 0x39:{	//absolute,Y
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			arg = cpu->memMap[address + cpu->y];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		case 0x21:{	//indirect,X
+			unsigned short address = indirectXAddress(cpu);
+			arg = cpu->memMap[address];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		}
+		case 0x31:{	//indirect,Y
+			unsigned short address = indirectYAddress(cpu);
+			arg = cpu->memMap[address];
+			cpu->accumulator = cpu->accumulator & arg;
+			break;
+		
+		}
+	}
+	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	
+	negativeFlag(cpu, cpu->accumulator);
+
+	zeroFlag(cpu, cpu->accumulator);
+}
+
 void lda(struct CPU *cpu){
 	unsigned char arg;
 	switch(*(cpu->programCounter - sizeof(unsigned char))){
@@ -76,18 +150,14 @@ void lda(struct CPU *cpu){
 		}
 		
 		case 0xa1:{	//(indirect,X)
-			unsigned char indirectAddress = *(cpu->programCounter);
-			indirectAddress = indirectAddress + cpu->x;
-			unsigned short address = absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+			unsigned short address = indirectXAddress(cpu);
 			arg = cpu->memMap[address];
 			cpu->accumulator = arg;
 			break;
 		}
 
 		case 0xb1:{	//(indirect,Y)
-			unsigned char indirectAddress = *(cpu->programCounter);
-			indirectAddress = indirectAddress + cpu->y;
-			unsigned short address = absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+			unsigned short address = indirectYAddress(cpu);
 			arg = cpu->memMap[address];
 			cpu->accumulator = arg;
 			break;
