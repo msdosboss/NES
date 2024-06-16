@@ -294,7 +294,7 @@ void cpuLoop(struct CPU *cpu){
 	}
 }
 
-int main(){	
+/*int main(){	
 	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\n'};
 	
 	unsigned char *stackPointer;
@@ -313,4 +313,4 @@ int main(){
 	printf("x = %x\n", cpu.x);
 	printf("processorStatus = %d\n", cpu.processorStatus);
 	
-}
+}*/

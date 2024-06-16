@@ -16,6 +16,9 @@ struct CPU {
 void zeroFlag(struct CPU *cpu, char reg);
 void negativeFlag(struct CPU *cpu, char reg);
 unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint);
+unsigned short indirectYAddress(struct CPU *cpu);
+unsigned short indirectXAddress(struct CPU *cpu);
+void and(struct CPU *cpu);
 void lda(struct CPU *cpu);
 void tax(struct CPU *cpu);
 void inx(struct CPU *cpu);
