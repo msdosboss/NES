@@ -1,12 +1,12 @@
 #include "6502.h"
 
 /*struct CPU{
-	unsigned char accumulator, x, y, processorStatus;
-	unsigned char memMap[65536];
-	unsigned char *programCounter;
+	unsigned unsigned char accumulator, x, y, processorStatus;
+	unsigned unsigned char memMap[65536];
+	unsigned unsigned char *programCounter;
 };*/
 
-void zeroFlag(struct CPU *cpu, char reg){
+void zeroFlag(struct CPU *cpu, unsigned char reg){
 	if(reg == 0){
 		cpu->processorStatus = cpu->processorStatus | 0b00000010;
 	}
@@ -15,14 +15,23 @@ void zeroFlag(struct CPU *cpu, char reg){
 	}
 }
 
-void negativeFlag(struct CPU *cpu, char reg){
+void negativeFlag(struct CPU *cpu, unsigned char reg){
 	if((reg & 0b10000000) != 0){
 		cpu->processorStatus = cpu->processorStatus | 0b10000000;
 	}
 	else{
 		cpu->processorStatus = cpu->processorStatus & 0b01111111;
 	}
+}
 
+void carryFlag(struct CPU *cpu, unsigned char reg){
+	if((reg & 0b10000000) != 0){
+		printf("%d\n",reg);
+		cpu->processorStatus = cpu->processorStatus | 0b00000001;
+	}
+	else{
+		cpu->processorStatus = cpu->processorStatus & 0b11111110;
+	}
 }
 
 unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){	//this is kind of a bad name because it's used in indirect address mode as well
@@ -104,6 +113,58 @@ void and(struct CPU *cpu){
 	negativeFlag(cpu, cpu->accumulator);
 
 	zeroFlag(cpu, cpu->accumulator);
+}
+
+void asl(struct CPU *cpu){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){	//note with these shifts I am still assuming that when you shift a bit in from the left it will always be 0, if that is not the case this will not work
+		case 0x0a:{	//accumulator
+			carryFlag(cpu, cpu->accumulator);
+			cpu->accumulator = cpu->accumulator << 1;
+			negativeFlag(cpu, cpu->accumulator);
+			zeroFlag(cpu, cpu->accumulator);
+			break;
+		}
+
+		case 0x06:{	//zero page
+			carryFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
+			cpu->memMap[*(cpu->programCounter)] = cpu->memMap[*(cpu->programCounter)] << 1;
+			negativeFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
+			zeroFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			break;
+		}
+		
+		case 0x16:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			carryFlag(cpu, cpu->memMap[address]);
+			cpu->memMap[address] = cpu->memMap[address] << 1;
+			negativeFlag(cpu, cpu->memMap[address]);
+			zeroFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			break;
+		}
+
+		case 0x0e:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			carryFlag(cpu, cpu->memMap[address]);
+			cpu->memMap[address] = cpu->memMap[address] << 1;
+			negativeFlag(cpu, cpu->memMap[address]);
+			zeroFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			break;
+		}
+
+		case 0x1e:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			address = address + cpu->x; 
+			carryFlag(cpu, cpu->memMap[address]);
+			cpu->memMap[address] = cpu->memMap[address] << 1;
+			negativeFlag(cpu, cpu->memMap[address]);
+			zeroFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			break;
+		}
+	}
 }
 
 void lda(struct CPU *cpu){
