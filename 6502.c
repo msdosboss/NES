@@ -26,11 +26,19 @@ void negativeFlag(struct CPU *cpu, unsigned char reg){
 
 void carryFlag(struct CPU *cpu, unsigned char reg){
 	if((reg & 0b10000000) != 0){
-		printf("%d\n",reg);
 		cpu->processorStatus = cpu->processorStatus | 0b00000001;
 	}
 	else{
 		cpu->processorStatus = cpu->processorStatus & 0b11111110;
+	}
+}
+
+void overFlag(struct CPU *cpu, unsigned char reg){
+	if((reg & 0b01000000) != 0){
+		cpu->processorStatus = cpu->processorStatus | 0b01000000;
+	}
+	else{
+		cpu->processorStatus = cpu->processorStatus & 0b10111111;
 	}
 }
 
@@ -78,6 +86,7 @@ void and(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address];
 			cpu->accumulator = cpu->accumulator & arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//note absolute addressing take 3 bytes so the program counter will have to be interated twice for the absolute calls
 			break;
 		}
 		
@@ -85,6 +94,7 @@ void and(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address + cpu->x];
 			cpu->accumulator = cpu->accumulator & arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 		
@@ -92,6 +102,7 @@ void and(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address + cpu->y];
 			cpu->accumulator = cpu->accumulator & arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 		case 0x21:{	//indirect,X
@@ -150,7 +161,7 @@ void asl(struct CPU *cpu){
 			cpu->memMap[address] = cpu->memMap[address] << 1;
 			negativeFlag(cpu, cpu->memMap[address]);
 			zeroFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->programCounter = cpu->programCounter + (sizeof(unsigned char) * 2);
 			break;
 		}
 
@@ -161,9 +172,82 @@ void asl(struct CPU *cpu){
 			cpu->memMap[address] = cpu->memMap[address] << 1;
 			negativeFlag(cpu, cpu->memMap[address]);
 			zeroFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter = cpu->programCounter + (sizeof(unsigned char) * 2);
+			break;
+		}
+	}
+}
+
+void bcc(struct CPU *cpu){
+	if((cpu->processorStatus & 0b00000001) == 0){
+		unsigned char difference = 0xff - *(cpu->programCounter);
+		cpu->programCounter = cpu->programCounter - difference;
+	}
+	else{
+		cpu->programCounter = cpu->programCounter + sizeof(sizeof unsigned char);
+	}
+}
+
+void bcs(struct CPU *cpu){
+	if((cpu->processorStatus & 0b00000001) != 0){
+		unsigned char difference = 0xff - *(cpu->programCounter);
+		cpu->programCounter = cpu->programCounter - difference;
+	}
+	else{
+		cpu->programCounter = cpu->programCounter + sizeof(sizeof unsigned char);
+	}
+}
+
+void beq(struct CPU *cpu){
+	if((cpu->processorStatus & 0b00000010) != 0){
+		unsigned char difference = 0xff - *(cpu->programCounter);
+		cpu->programCounter = cpu->programCounter - difference;
+	}
+	else{
+		cpu->programCounter = cpu->programCounter + sizeof(sizeof unsigned char);
+	}
+}
+
+void bit(struct CPU *cpu){
+	unsigned char result;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x24:{
+			result = *(cpu->programCounter) & cpu->accumulator;
+			overFlag(cpu, *(cpu->programCounter));
+			negativeFlag(cpu, *(cpu->programCounter));
+			break;
+		}
+
+		case 0x2c:{
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			result = cpu->memMap[address] & cpu->accumulator;
+			overFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
+	}
+	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	zeroFlag(cpu, result);
+}
+
+void bmi(struct CPU *cpu){
+	if((cpu->processorStatus & 0b10000000) == 0){
+		unsigned char difference = 0xff - *(cpu->programCounter);
+		cpu->programCounter = cpu->programCounter - difference;
+	}
+	else{
+		cpu->programCounter = cpu->programCounter + sizeof(sizeof unsigned char);
+	}
+}
+
+void bne(struct CPU *cpu){
+	if((cpu->processorStatus & 0b00000010) == 0){
+		unsigned char difference = 0xff - *(cpu->programCounter);
+		cpu->programCounter = cpu->programCounter - difference;
+	}
+	else{
+		cpu->programCounter = cpu->programCounter + sizeof(sizeof unsigned char);
 	}
 }
 
@@ -193,6 +277,7 @@ void lda(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address];
 			cpu->accumulator = arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 
@@ -200,6 +285,7 @@ void lda(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address + cpu->x];	//this is what makes it different from absolute
 			cpu->accumulator = arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 
@@ -207,6 +293,7 @@ void lda(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			arg = cpu->memMap[address + cpu->y];	//this is what makes it different from absolute
 			cpu->accumulator = arg;
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 		
@@ -287,7 +374,7 @@ void loadInstructions(struct CPU *cpu, char *instructions){
 	}
 }
 
-void cpuLoop(struct CPU *cpu){
+void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 	while(*(cpu->programCounter) != 0){
 		switch(*(cpu->programCounter)){
 			case 0xa9:
@@ -315,7 +402,29 @@ void cpuLoop(struct CPU *cpu){
 				and(cpu);
 				break;
 			}			
-	
+			
+			case 0x0a:
+			case 0x06:
+			case 0x16:
+			case 0x0e:
+			case 0x1e:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				asl(cpu);
+				break;
+			}
+
+			case 0x90:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				bcc(cpu);
+				break;	
+			}
+			
+			case 0xb0:{
+				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+				bcs(cpu);
+				break;			
+			}		
+
 			case 0xaa:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				tax(cpu);
