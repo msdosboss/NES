@@ -5,12 +5,13 @@
 #include <stdlib.h>
 
 struct CPU {
-    unsigned char *programCounter;
-    unsigned char accumulator;
-    unsigned char x;
-    unsigned char y;
-    unsigned char processorStatus;
-    unsigned char memMap[65536];  // 64KB memory
+	unsigned char *programCounter;
+	unsigned char *stackPointer;
+	unsigned char accumulator;
+	unsigned char x;
+	unsigned char y;
+	unsigned char processorStatus;
+	unsigned char memMap[65536];  // 64KB memory
 };
 
 void zeroFlag(struct CPU *cpu, unsigned char reg);

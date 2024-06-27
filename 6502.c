@@ -1,9 +1,10 @@
 #include "6502.h"
 
 /*struct CPU{
-	unsigned unsigned char accumulator, x, y, processorStatus;
-	unsigned unsigned char memMap[65536];
-	unsigned unsigned char *programCounter;
+	unsigned char accumulator, x, y, processorStatus;
+	unsigned char memMap[65536];
+	unsigned char *programCounter;
+	unsigned char *stackPointer;
 };*/
 
 void zeroFlag(struct CPU *cpu, unsigned char reg){
@@ -73,6 +74,30 @@ void push(struct CPU *cpu, unsigned char val){
 unsigned char pop(struct CPU *cpu){
 	cpu->stackPointer = cpu->stackPointer + sizeof(unsigned char);
 	return *(cpu->stackPointer - sizeof(unsigned char));
+}
+
+unsigned short popAbsoluteAddress(struct CPU *cpu){
+	unsigned short address = 0;
+	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
+	address |= pop(cpu);
+	return address;
+}
+
+void adc(struct CPU *cpu){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x69:{
+			unsigned short temp = cpu->accumulator + *(cpu->programCounter) + (cpu->processorStatus & 0b00000001);
+			if(temp > 0xff){
+				cpu->processorStatus |= 0b00000001;
+			}
+			else{
+				cpu->processorStatus &= 0b11111110;
+			}
+			cpu->accumulator = temp & 0xff;
+		}
+	}
+	zeroFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->accumulator);
 }
 
 void and(struct CPU *cpu){
@@ -371,7 +396,7 @@ void cmp(struct CPU *cpu){
 			break;
 		}
 
-		case 0xcd:{	//indirect,Y
+		case 0xd1:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
 			result = cpu->accumulator - cpu->memMap[address];
 			if(cpu->accumulator >= cpu->memMap[address]){
@@ -647,11 +672,11 @@ void jmp(struct CPU *cpu){
 }
 
 void jsr(struct CPU *cpu){
-	unsigned short index = cpu->programCounter - (cpu->memMapi + 1);
+	unsigned short index = cpu->programCounter - (cpu->memMap + 1);
 	push(cpu, (unsigned char)(index & 0xff00));	//pushes the first 8 bits of the address to stack
 	index = index >> 8;
 	push(cpu, (unsigned char)(index & 0xff00));
-	unsinged short address = (cpu, cpu->programCounter);
+	unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 	cpu->programCounter = &cpu->memMap[address];
 	cpu->programCounter = cpu->programCounter + sizeof(unsigned char) * 2;
 }
@@ -863,8 +888,8 @@ void lsr(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			carryFlag(cpu, (cpu->memMap[address] << 7));
 			cpu->memMap[address] >>= 1;
-			zeroFlag(cpu, memMap[address]);
-			negativeFlag(cpu, memMap[address]);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
 		}
 
@@ -872,8 +897,8 @@ void lsr(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
 			carryFlag(cpu, (cpu->memMap[address] << 7));
 			cpu->memMap[address] >>= 1;
-			zeroFlag(cpu, memMap[address]);
-			negativeFlag(cpu, memMap[address]);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
 		}
 	}
@@ -952,13 +977,251 @@ void php(struct CPU *cpu){
 	push(cpu, cpu->processorStatus);
 }
 
+void pla(struct CPU *cpu){
+	cpu->accumulator = pop(cpu);
+
+	zeroFlag(cpu, cpu->accumulator);
+	
+	negativeFlag(cpu, cpu->accumulator);
+}
+
+void plp(struct CPU *cpu){
+	cpu->processorStatus = pop(cpu);
+}
+
+void rol(struct CPU *cpu){
+	unsigned char preShiftVal;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x2a:{	//accumulator
+			preShiftVal = cpu->accumulator;
+			cpu->accumulator <<= 1;
+			cpu->accumulator |= (cpu->processorStatus & 0b00000001);	//accumulator should be being ored by 0b0000000X with the x being the first bit (carry bit) from processorStatus
+			carryFlag(cpu, preShiftVal);	//storing the 7th bit of the accumulator in carry flag from before the accumulator was shifted
+			zeroFlag(cpu, cpu->accumulator);
+			negativeFlag(cpu, cpu->accumulator);
+		}
+
+		case 0x26:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] <<= 1;
+			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x36:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] <<= 1;
+			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x2e:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] <<= 1;
+			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char) * 2;
+		}
+
+		case 0x3e:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] <<= 1;
+			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char) * 2;
+		}
+	}
+}
+
+void ror(struct CPU *cpu){
+	unsigned char preShiftVal;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x6a:{	//accumulator
+			preShiftVal = cpu->accumulator;
+			cpu->accumulator >>= 1;
+			cpu->accumulator |= (cpu->processorStatus << 7);	//accumulator should be being ored by 0bX0000000 with the x being the first bit (carry bit) from processorStatus
+			carryFlag(cpu, preShiftVal);	//storing the 7th bit of the accumulator in carry flag from before the accumulator was shifted
+			zeroFlag(cpu, cpu->accumulator);
+			negativeFlag(cpu, cpu->accumulator);
+		}
+
+		case 0x66:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] >>= 1;
+			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x76:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] >>= 1;
+			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x6e:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] >>= 1;
+			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char) * 2;
+		}
+
+		case 0x7e:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			preShiftVal = cpu->memMap[address];
+			cpu->memMap[address] >>= 1;
+			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			carryFlag(cpu, preShiftVal);
+			zeroFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
+			cpu->programCounter += sizeof(unsigned char) * 2;
+		}
+	}
+}
+
+void rti(struct CPU *cpu){
+	cpu->processorStatus = pop(cpu);
+	cpu->programCounter = &cpu->memMap[popAbsoluteAddress(cpu)];
+}
+
+void rts(struct CPU *cpu){
+	cpu->programCounter = &cpu->memMap[popAbsoluteAddress(cpu) - 1];
+}
+
+void sbc(struct CPU *cpu){
+	return	//still needs to be written
+}
+
+void sec(struct CPU *cpu){
+	cpu->processorStatus |= 0b00000001;	//turn carryFlag on
+}
+
+void sed(struct CPU *cpu){
+	cpu->processorStatus |= 0b00001000;	//turn decimal Flag on
+}
+
+void sei(struct CPU *cpu){
+	cpu->processorStatus |= 0b10000100;	//turn interrupt flag on
+}
+
+void sta(struct CPU *cpu){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x85:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			cpu->memMap[address] = cpu->accumulator;
+		}
+
+		case 0x95:{	//zero page,X
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			cpu->memMap[address] = cpu->accumulator;
+		}
+
+		case 0x8d:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			cpu->memMap[address] = cpu->accumulator;
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x9d:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
+			cpu->memMap[address] = cpu->accumulator;
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x99:{	//absolute,Y
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->y;
+			cpu->memMap[address] = cpu->accumulator;
+			cpu->programCounter += sizeof(unsigned char);
+		}
+
+		case 0x81:{	//indirect,X
+			unsigned short address = indirectXAddress(cpu);
+			cpu->memMap[address] = cpu->accumulator;
+		}
+
+		case 0x91:{	//indirect,Y
+			unsigned short address = indirectYAddress(cpu);
+			cpu->memMap[address] = cpu->accumulator;
+		}
+
+	}
+	cpu->programCounter += sizeof(unsigned char);
+}
+
+void stx(struct CPU *cpu){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x86:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			cpu->memMap[address] = cpu->x;
+		}
+
+		case 0x96:{	//zero page,Y
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			cpu->memMap[address] = cpu->x;
+		}
+
+		case 0x8e:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			cpu->memMap[address] = cpu->x;
+			cpu->programCounter += sizeof(unsigned char);
+		}
+	}
+	cpu->programCounter += sizeof(unsigned char);
+}
+
+void sty(struct CPU *cpu){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0x84:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			cpu->memMap[address] = cpu->x;
+		}
+
+		case 0x94:{	//zero page,Y
+			unsigned char address = *(cpu->programCounter) + cpu->x;
+			cpu->memMap[address] = cpu->x;
+		}
+
+		case 0x8c:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			cpu->memMap[address] = cpu->x;
+			cpu->programCounter += sizeof(unsigned char);
+		}
+	}
+	cpu->programCounter += sizeof(unsigned char);
+}
+
 void tax(struct CPU *cpu){
 	cpu->x = cpu->accumulator;
 	
 	zeroFlag(cpu, cpu->x);
 	
-	negativeFlag(cpu, cpu->x);
-	
+	negativeFlag(cpu, cpu->x);	
 }
 
 void tay(struct CPU *cpu){
@@ -967,12 +1230,19 @@ void tay(struct CPU *cpu){
 	zeroFlag(cpu, cpu->y);
 	
 	negativeFlag(cpu, cpu->y);
-	
 }
 
 void txa(struct CPU *cpu){
 	cpu->accumulator = cpu->x;
+		
+	zeroFlag(cpu, cpu->accumulator);
 	
+	negativeFlag(cpu, cpu->accumulator);
+}
+
+void tsx(struct CPU *cpu){
+	cpu->accumulator = *(cpu->stackPointer);
+
 	zeroFlag(cpu, cpu->accumulator);
 	
 	negativeFlag(cpu, cpu->accumulator);
@@ -985,7 +1255,6 @@ void tya(struct CPU *cpu){
 	zeroFlag(cpu, cpu->accumulator);
 	
 	negativeFlag(cpu, cpu->accumulator);
-	
 }
 
 void loadInstructions(struct CPU *cpu, char *instructions){
@@ -1089,16 +1358,14 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 	}
 }
 
-/*int main(){	
+int main(){	
 	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\n'};
 	
-	unsigned char *stackPointer;
-
 	struct CPU cpu = {0};
 
 	cpu.programCounter = &(cpu.memMap[0x8000]);
 	
-	stackPointer = &(cpu.memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
+	cpu.stackPointer = &(cpu.memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
 
 	loadInstructions(&cpu, instructions);
 
@@ -1108,4 +1375,4 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 	printf("x = %x\n", cpu.x);
 	printf("processorStatus = %d\n", cpu.processorStatus);
 	
-}*/
+}
