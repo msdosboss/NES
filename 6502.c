@@ -84,20 +84,75 @@ unsigned short popAbsoluteAddress(struct CPU *cpu){
 }
 
 void adc(struct CPU *cpu){
+	unsigned short result;
+	unsigned char val;
 	switch(*(cpu->programCounter - sizeof(unsigned char))){
-		case 0x69:{
-			unsigned short temp = cpu->accumulator + *(cpu->programCounter) + (cpu->processorStatus & 0b00000001);
-			if(temp > 0xff){
-				cpu->processorStatus |= 0b00000001;
-			}
-			else{
-				cpu->processorStatus &= 0b11111110;
-			}
-			cpu->accumulator = temp & 0xff;
+		case 0x69:{	//immediate
+			val = *(cpu->programCounter);
+			break;
 		}
+		
+		case 0x65:{	//zero page
+			val = cpu->memMap[*(cpu->programCounter)];
+			break;
+		}
+
+		case 0x75:{	//zero page,X
+			val = cpu->memMap[*(cpu->programCounter) + cpu->x];
+			break;
+		}
+		
+		case 0x6d:{	//absolute
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+
+		case 0x7d:{	//absolute,X
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter) + cpu->x];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+		
+		case 0x79:{	//absolute,Y
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+		
+		case 0x61:{	//indirect,X
+			val = cpu->memMap[indirectXAddress(cpu)];
+			break;
+		}
+
+		case 0x71:{
+			val = cpu->memMap[indirectYAddress(cpu)];
+			break;
+		}
+
 	}
+	
+	result = cpu->accumulator + val + (cpu->processorStatus & 0b00000001);
+	
+	if(result > 0xff){	//Set carry flag
+		cpu->processorStatus |= 0b00000001;
+	}
+	else{
+		cpu->processorStatus &= 0b11111110;
+	}
+	
+	if(((cpu->accumulator ^ val) & 0b10000000) == 0 && ((cpu->accumulator ^ result) & 0b10000000) != 0){	//set overflow flag
+		cpu->processorStatus |= 0b01000000;
+	}
+	else{
+		cpu->processorStatus &= 0b10111111;
+	}
+	
+	cpu->accumulator = result & 0xff;
+
 	zeroFlag(cpu, cpu->accumulator);
 	negativeFlag(cpu, cpu->accumulator);
+	cpu->programCounter += sizeof(unsigned char);
 }
 
 void and(struct CPU *cpu){
@@ -891,6 +946,7 @@ void lsr(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 
 		case 0x5e:{	//absoult,X
@@ -900,6 +956,7 @@ void lsr(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 	}
 }
@@ -999,6 +1056,7 @@ void rol(struct CPU *cpu){
 			carryFlag(cpu, preShiftVal);	//storing the 7th bit of the accumulator in carry flag from before the accumulator was shifted
 			zeroFlag(cpu, cpu->accumulator);
 			negativeFlag(cpu, cpu->accumulator);
+			break;
 		}
 
 		case 0x26:{	//zero page
@@ -1010,6 +1068,7 @@ void rol(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char);
+			break;
 		}
 
 		case 0x36:{	//zero page,X
@@ -1021,6 +1080,7 @@ void rol(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char);
+			break;
 		}
 
 		case 0x2e:{	//absolute
@@ -1032,6 +1092,7 @@ void rol(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 
 		case 0x3e:{	//absolute,X
@@ -1043,6 +1104,7 @@ void rol(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 	}
 }
@@ -1057,6 +1119,7 @@ void ror(struct CPU *cpu){
 			carryFlag(cpu, preShiftVal);	//storing the 7th bit of the accumulator in carry flag from before the accumulator was shifted
 			zeroFlag(cpu, cpu->accumulator);
 			negativeFlag(cpu, cpu->accumulator);
+			break;
 		}
 
 		case 0x66:{	//zero page
@@ -1068,6 +1131,7 @@ void ror(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char);
+			break;
 		}
 
 		case 0x76:{	//zero page,X
@@ -1079,6 +1143,7 @@ void ror(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char);
+			break;
 		}
 
 		case 0x6e:{	//absolute
@@ -1090,6 +1155,7 @@ void ror(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 
 		case 0x7e:{	//absolute,X
@@ -1101,6 +1167,7 @@ void ror(struct CPU *cpu){
 			zeroFlag(cpu, cpu->memMap[address]);
 			negativeFlag(cpu, cpu->memMap[address]);
 			cpu->programCounter += sizeof(unsigned char) * 2;
+			break;
 		}
 	}
 }
@@ -1115,7 +1182,75 @@ void rts(struct CPU *cpu){
 }
 
 void sbc(struct CPU *cpu){
-	return	//still needs to be written
+	unsigned short result;
+	unsigned char val;
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
+		case 0xe9:{	//immediate
+			val = *(cpu->programCounter);
+			break;
+		}
+		
+		case 0xe5:{	//zero page
+			val = cpu->memMap[*(cpu->programCounter)];
+			break;
+		}
+
+		case 0xf5:{	//zero page,X
+			val = cpu->memMap[*(cpu->programCounter) + cpu->x];
+			break;
+		}
+		
+		case 0xed:{	//absolute
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+
+		case 0xfd:{	//absolute,X
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter) + cpu->x];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+		
+		case 0xf9:{	//absolute,Y
+			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
+		
+		case 0xe1:{	//indirect,X
+			val = cpu->memMap[indirectXAddress(cpu)];
+			break;
+		}
+
+		case 0xf1:{
+			val = cpu->memMap[indirectYAddress(cpu)];
+			break;
+		}
+
+	}
+	
+	result = cpu->accumulator - val - (cpu->processorStatus & 0b00000001);
+	
+	if(result <= 0xff){	//Set carry flag
+		cpu->processorStatus |= 0b00000001;
+	}
+	else{
+		cpu->processorStatus &= 0b11111110;
+	}
+	
+	if(((cpu->accumulator ^ val) & 0b10000000) != 0 && ((cpu->accumulator ^ result) & 0b10000000) != 0){	//set overflow flag
+		cpu->processorStatus |= 0b01000000;
+	}
+	else{
+		cpu->processorStatus &= 0b10111111;
+	}
+	
+	cpu->accumulator = result & 0xff;
+
+	zeroFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->accumulator);
+	cpu->programCounter += sizeof(unsigned char);
 }
 
 void sec(struct CPU *cpu){
@@ -1266,6 +1401,20 @@ void loadInstructions(struct CPU *cpu, char *instructions){
 void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 	while(*(cpu->programCounter) != 0){
 		switch(*(cpu->programCounter)){
+			case 0x69:
+			case 0x65:
+			case 0x75:
+			case 0x6d:
+			case 0x7d:
+			case 0x79:
+			case 0x61:
+			case 0x71:{
+				cpu->programCounter += sizeof(unsigned char);
+				adc(cpu);
+				break;
+			}
+
+
 			case 0xa9:
 			case 0xa5:
 			case 0xb5:
@@ -1312,7 +1461,204 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				bcs(cpu);
 				break;			
+			}
+
+			case 0xf0:{
+				cpu->programCounter += sizeof(unsigned char);
+				beq(cpu);
+				break;
 			}		
+
+			case 0x24:
+			case 0x2c:{
+				cpu->programCounter += sizeof(unsigned char);
+				bit(cpu);
+				break;
+			}
+
+			case 0x30:{
+				cpu->programCounter += sizeof(unsigned char);
+				bmi(cpu);
+				break;
+			}
+
+			case 0xd0:{
+				cpu->programCounter += sizeof(unsigned char);
+				bne(cpu);
+				break;
+			}
+
+			case 0x10:{
+				cpu->programCounter += sizeof(unsigned char);
+				bpl(cpu);
+				break;
+			}
+
+			//I didn't bother making a brk instruction that just kind of how the loop works
+
+			case 0x50:{
+				cpu->programCounter += sizeof(unsigned char);
+				bvc(cpu);
+				break;
+			}
+
+			case 0x70:{
+				cpu->programCounter += sizeof(unsigned char);
+				bvs(cpu);
+				break;
+			}
+
+			case 0xd8:{
+				cpu->programCounter += sizeof(unsigned char);
+				cld(cpu);
+				break;
+			}
+
+			case 0x58:{
+				cpu->programCounter += sizeof(unsigned char);
+				cli(cpu);
+				break;
+			}
+
+			case 0xb8:{
+				cpu->programCounter += sizeof(unsigned char);
+				clv(cpu);
+				break;
+			}
+
+			case 0xc9:
+			case 0xc5:
+			case 0xd5:
+			case 0xcd:
+			case 0xdd:
+			case 0xd9:
+			case 0xc1:
+			case 0xd1:{
+				cpu->programCounter += sizeof(unsigned char);
+				cmp(cpu);
+				break;
+			}
+
+			case 0xe0:
+			case 0xe4:
+			case 0xec:{
+				cpu->programCounter += sizeof(unsigned char);
+				cpx(cpu);
+				break;
+			}
+
+			case 0xc0:
+			case 0xc4:
+			case 0xcc:{
+				cpu->programCounter += sizeof(unsigned char);
+				cpy(cpu);
+				break;
+			}
+
+			case 0xc6:
+			case 0xd6:
+			case 0xce:
+			case 0xde:{
+				cpu->programCounter += sizeof(unsigned char);
+				dec(cpu);
+				break;
+			}
+
+			case 0xca:{
+				cpu->programCounter += sizeof(unsigned char);
+				dex(cpu);
+				break;
+			}
+
+			case 0x88:{
+				cpu->programCounter += sizeof(unsigned char);
+				dey(cpu);
+				break;
+			}
+	
+			case 0x49:
+			case 0x45:
+			case 0x55:
+			case 0x4d:
+			case 0x5d:
+			case 0x59:
+			case 0x41:
+			case 0x51:{
+				cpu->programCounter += sizeof(unsigned char);
+				eor(cpu);
+				break;
+			}
+
+			case 0xe6:
+			case 0xf6:
+			case 0xee:
+			case 0xfe:{
+				cpu->programCounter += sizeof(unsigned char);
+				inc(cpu);
+				break;
+			}
+
+			case 0xe8:{
+				cpu->programCounter += sizeof(unsigned char);
+				inx(cpu);
+				break;
+
+			}
+
+			case 0xc8:{
+				cpu->programCounter += sizeof(unsigned char);
+				iny(cpu);
+				break;
+
+			}
+
+			case 0x4c:
+			case 0x6c:{
+				cpu->programCounter += sizeof(unsigned char);
+				jmp(cpu);
+				break;
+	
+			}
+
+			case 0x20:{
+				cpu->programCounter += sizeof(unsigned char);
+				jsr(cpu);
+				break;
+			}
+
+			case 0xa9:
+			case 0xa5:
+			case 0xb5:
+			case 0xad:
+			case 0xbd:
+			case 0xb9:
+			case 0xa1:
+			case 0xb1:{
+				cpu->programCounter += sizeof(unsigned char);
+				lda(cpu);
+				break;
+			}
+
+
+			case 0xa2:
+			case 0xa6:
+			case 0xb6:
+			case 0xae:
+			case 0xbe:{
+				cpu->programCounter += sizeof(unsigned char);
+				ldx(cpu);
+				break;
+			}
+
+			case 0xa0:
+			case 0xa4:
+			case 0xb4:
+			case 0xac:
+			case 0xbc:{
+				cpu->programCounter += sizeof(unsigned char);
+				ldy(cpu);
+				break;
+			}
 
 			case 0xea:{	//NOP instruction
 				cpu->programCounter += sizeof(unsigned char);
