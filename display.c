@@ -5,14 +5,25 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <SDL.h>
-#define COLLUMNS 10
-#define ROWS 10
+#define COLLUMNS 32
+#define ROWS 32
 #define WIDTH 640
 #define HEIGHT 640
 #define SIZE 200
 #define FPS 60
+#define SQUARESIZE 20
 
-int main(int argc, char* argv[]){
+void rendColor(SDL_Renderer *rend, unsigned char val){
+	switch(val){
+		case 0x01:
+			break;
+		default:
+			SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
+			
+	}
+}
+
+SDL_Window *initDisplay(){
 	/* Initializes the timer, audio, video, joystick,
 	haptic, gamecontroller and events subsystems */
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
@@ -29,6 +40,11 @@ int main(int argc, char* argv[]){
 		SDL_Quit();
 		return 0;
 	}
+
+	return wind;
+}
+
+SDL_Renderer *initRender(SDL_Window *wind){
 	/* Create a renderer */
 	Uint32 render_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
 	SDL_Renderer* rend = SDL_CreateRenderer(wind, -1, render_flags);
@@ -38,6 +54,11 @@ int main(int argc, char* argv[]){
 		SDL_Quit();
 		return 0;
 	}
+
+	return rend;
+}
+
+int displayLoop(SDL_Window *wind, SDL_Renderer *rend){
 	/* Main loop */
 	bool running = true, left_pressed = false, right_pressed = false;
 	float x_pos = (WIDTH-SIZE)/2, y_pos = (HEIGHT-SIZE)/2, x_change = 0, y_change = 0;
@@ -46,7 +67,7 @@ int main(int argc, char* argv[]){
 	for(int i = 0; i < COLLUMNS; i++){
 		rects[i] = malloc(sizeof(SDL_Rect) * ROWS);
 		for(int j = 0; j < ROWS; j++){
-			rects[i][j] = (SDL_Rect){i * 64, j * 64, 64, 64};
+			rects[i][j] = (SDL_Rect){i * SQUARESIZE, j * SQUARESIZE, SQUARESIZE, SQUARESIZE};
 		}
 	}
 	SDL_Rect rect = {(int) x_pos, (int) y_pos, SIZE, SIZE};
@@ -56,8 +77,8 @@ int main(int argc, char* argv[]){
 		while (SDL_PollEvent(&event)){
 			switch (event.type){
 				case SDL_QUIT:
-				running = false;
-				break;
+					running = false;
+					break;
 				case SDL_KEYDOWN:
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
@@ -71,7 +92,7 @@ int main(int argc, char* argv[]){
 						default:
 							break;
 					}
-				break;
+					break;
 				case SDL_KEYUP:
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
@@ -111,16 +132,18 @@ int main(int argc, char* argv[]){
 	//SDL_RenderFillRect(rend, &rect);
 	for(int i = 0; i < COLLUMNS; i++){
 		fflush(stdout);
-	for(int j = 0; j < ROWS; j++){
-		if(((j + 1) % 2 != 0 && (i + 1) % 2 != 0) || ((j + 1) % 2 == 0 && (i + 1) % 2 == 0)){
+		for(int j = 0; j < ROWS; j++){
+			
+			/*if(((j + 1) % 2 != 0 && (i + 1) % 2 != 0) || ((j + 1) % 2 == 0 && (i + 1) % 2 == 0)){
 				SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
 			}
 			else{
 				SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
-			}
-		SDL_RenderFillRect(rend, &rects[i][j]);
+			}*/
+			rendColor(rend, 0);
+			SDL_RenderFillRect(rend, &rects[i][j]);
 			//SDL_RenderPresent(rend);
-	}
+		}
 	} 
 	/* Draw to window and loop */
 	SDL_RenderPresent(rend);
@@ -131,4 +154,13 @@ int main(int argc, char* argv[]){
 	SDL_DestroyWindow(wind);
 	SDL_Quit();
 	return 0;
+
+}
+
+int main(int argc, char* argv[]){
+	SDL_Window *wind = initDisplay();
+
+	SDL_Renderer *rend = initRender(wind);
+
+	displayLoop(wind, rend);
 }
