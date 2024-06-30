@@ -1384,6 +1384,10 @@ void tsx(struct CPU *cpu){
 	
 }
 
+void txs(struct CPU *cpu){
+	*cpu->stackPointer = cpu->x;
+}
+
 void tya(struct CPU *cpu){
 	cpu->accumulator = cpu->y;
 	
@@ -1411,20 +1415,6 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 			case 0x71:{
 				cpu->programCounter += sizeof(unsigned char);
 				adc(cpu);
-				break;
-			}
-
-
-			case 0xa9:
-			case 0xa5:
-			case 0xb5:
-			case 0xad:
-			case 0xbd:
-			case 0xb9:
-			case 0xa1:
-			case 0xb1:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//I do understand that this is equivalent to cpu->programCounter++; because sizeof(unsigned char) == 1 I think this is more explict though
-				lda(cpu);
 				break;
 			}
 		
@@ -1676,13 +1666,13 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 			}
 
 			case 0x09:
-			case 0x09:
-			case 0x09:
-			case 0x09:
-			case 0x09:
-			case 0x09:
-			case 0x09:
-			case 0x09:{
+			case 0x05:
+			case 0x15:
+			case 0x0d:
+			case 0x1d:
+			case 0x19:
+			case 0x01:
+			case 0x11:{
 				cpu->programCounter += sizeof(unsigned char);
 				ora(cpu);
 				break;
