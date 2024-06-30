@@ -1660,8 +1660,147 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 				break;
 			}
 
+			case 0x4a:
+			case 0x46:
+			case 0x56:
+			case 0x4e:
+			case 0x5e:{
+				cpu->programCounter += sizeof(unsigned char);
+				lsr(cpu);
+				break;
+			}
+
 			case 0xea:{	//NOP instruction
 				cpu->programCounter += sizeof(unsigned char);
+				break;
+			}
+
+			case 0x09:
+			case 0x09:
+			case 0x09:
+			case 0x09:
+			case 0x09:
+			case 0x09:
+			case 0x09:
+			case 0x09:{
+				cpu->programCounter += sizeof(unsigned char);
+				ora(cpu);
+				break;
+			}
+
+			case 0x48:{
+				cpu->programCounter += sizeof(unsigned char);
+				pha(cpu);
+				break;
+
+			}
+
+			case 0x08:{
+				cpu->programCounter += sizeof(unsigned char);
+				php(cpu);
+				break;
+			}
+
+			case 0x68:{
+				cpu->programCounter += sizeof(unsigned char);
+				pla(cpu);
+				break;
+			}
+
+			case 0x28:{
+				cpu->programCounter += sizeof(unsigned char);
+				plp(cpu);
+				break;
+			}
+
+			case 0x2a:
+			case 0x26:
+			case 0x36:
+			case 0x2e:
+			case 0x3e:{
+				cpu->programCounter += sizeof(unsigned char);
+				rol(cpu);
+				break;
+			}
+			
+			case 0x6a:
+			case 0x66:
+			case 0x76:
+			case 0x6e:
+			case 0x7e:{
+				cpu->programCounter += sizeof(unsigned char);
+				ror(cpu);
+				break;
+			}
+
+			case 0x40:{
+				cpu->programCounter += sizeof(unsigned char);
+				rti(cpu);
+				break;
+			}
+
+			case 0x60:{
+				cpu->programCounter += sizeof(unsigned char);
+				rts(cpu);
+				break;
+			}
+	
+			case 0xe9:
+			case 0xe5:
+			case 0xf5:
+			case 0xed:
+			case 0xfd:
+			case 0xf9:
+			case 0xe1:
+			case 0xf1:{
+				cpu->programCounter += sizeof(unsigned char);
+				sbc(cpu);
+				break;
+			}
+
+			case 0x38:{
+				cpu->programCounter += sizeof(unsigned char);
+				sec(cpu);
+				break;
+			}
+
+			case 0xf8:{
+				cpu->programCounter += sizeof(unsigned char);
+				sed(cpu);
+				break;
+			}
+
+			case 0x78:{
+				cpu->programCounter += sizeof(unsigned char);
+				sei(cpu);
+				break;
+			}
+
+			case 0x85:
+			case 0x95:
+			case 0x8d:
+			case 0x9d:
+			case 0x99:
+			case 0x81:
+			case 0x91:{
+				cpu->programCounter += sizeof(unsigned char);
+				sta(cpu);
+				break;
+			}
+	
+			case 0x86:
+			case 0x96:
+			case 0x8e:{
+				cpu->programCounter += sizeof(unsigned char);
+				stx(cpu);
+				break;
+			}
+
+			case 0x84:
+			case 0x94:
+			case 0x8c:{
+				cpu->programCounter += sizeof(unsigned char);
+				sty(cpu);
 				break;
 			}
 
@@ -1677,9 +1816,21 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 				break;
 			}
 			
+			case 0xba:{
+				cpu->programCounter += sizeof(unsigned char);
+				tsx(cpu);
+				break;
+			}
+
 			case 0x8a:{
 				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 				txa(cpu);
+				break;
+			}
+
+			case 0x9a:{
+				cpu->programCounter += sizeof(unsigned char);
+				txs(cpu);
 				break;
 			}
 
@@ -1688,12 +1839,6 @@ void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
 				tya(cpu);
 				break;
 			}			
-
-			case 0xe8:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				inx(cpu);
-				break;
-			}
 
 			default:{
 				printf("%x instructions does not exist yet\n", *(cpu->programCounter));
