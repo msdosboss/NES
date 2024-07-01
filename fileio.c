@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "fileio.h"
 
 #define MAXLINELENGTH 1024
 
@@ -21,10 +19,9 @@ char *loadRom(char *fileName){
 		continue;
 	}
 	
-	printf("%s\n", rom);
 	return rom;
 }
 
-int main(){
+/*int main(){
 	loadRom("snake.rom");
-}
+}*/

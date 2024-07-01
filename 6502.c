@@ -732,6 +732,7 @@ void jsr(struct CPU *cpu){
 	index = index >> 8;
 	push(cpu, (unsigned char)(index & 0xff00));
 	unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+	printf("%x\n", address);
 	cpu->programCounter = &cpu->memMap[address];
 	cpu->programCounter = cpu->programCounter + sizeof(unsigned char) * 2;
 }
@@ -1396,459 +1397,470 @@ void tya(struct CPU *cpu){
 	negativeFlag(cpu, cpu->accumulator);
 }
 
-void loadInstructions(struct CPU *cpu, char *instructions){
-	for(int i = 0; instructions[i] != '\n'; i++){
+void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
+	for(int i = 0; i < instructionsLen; i++){
 		(cpu->programCounter[i]) = instructions[i];
 	}
 }
 
 void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
-	while(*(cpu->programCounter) != 0){
-		switch(*(cpu->programCounter)){
-			case 0x69:
-			case 0x65:
-			case 0x75:
-			case 0x6d:
-			case 0x7d:
-			case 0x79:
-			case 0x61:
-			case 0x71:{
-				cpu->programCounter += sizeof(unsigned char);
-				adc(cpu);
-				break;
-			}
+	printf("Instruction %x is being run and pc is pointing at %x in memory\n", *(cpu->programCounter), cpu->programCounter - cpu->memMap);
+
+	switch(*(cpu->programCounter)){
+		case 0x69:
+		case 0x65:
+		case 0x75:
+		case 0x6d:
+		case 0x7d:
+		case 0x79:
+		case 0x61:
+		case 0x71:{
+			cpu->programCounter += sizeof(unsigned char);
+			adc(cpu);
+			break;
+		}
+	
+		case 0x29:
+		case 0x25:			
+		case 0x35:			
+		case 0x2d:			
+		case 0x3d:			
+		case 0x39:			
+		case 0x21:			
+		case 0x31:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			and(cpu);
+			break;
+		}			
 		
-			case 0x29:
-			case 0x25:			
-			case 0x35:			
-			case 0x2d:			
-			case 0x3d:			
-			case 0x39:			
-			case 0x21:			
-			case 0x31:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				and(cpu);
-				break;
-			}			
-			
-			case 0x0a:
-			case 0x06:
-			case 0x16:
-			case 0x0e:
-			case 0x1e:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				asl(cpu);
-				break;
-			}
+		case 0x0a:
+		case 0x06:
+		case 0x16:
+		case 0x0e:
+		case 0x1e:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			asl(cpu);
+			break;
+		}
 
-			case 0x90:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				bcc(cpu);
-				break;	
-			}
-			
-			case 0xb0:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				bcs(cpu);
-				break;			
-			}
+		case 0x90:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			bcc(cpu);
+			break;	
+		}
+		
+		case 0xb0:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			bcs(cpu);
+			break;			
+		}
 
-			case 0xf0:{
-				cpu->programCounter += sizeof(unsigned char);
-				beq(cpu);
-				break;
-			}		
+		case 0xf0:{
+			cpu->programCounter += sizeof(unsigned char);
+			beq(cpu);
+			break;
+		}		
 
-			case 0x24:
-			case 0x2c:{
-				cpu->programCounter += sizeof(unsigned char);
-				bit(cpu);
-				break;
-			}
+		case 0x24:
+		case 0x2c:{
+			cpu->programCounter += sizeof(unsigned char);
+			bit(cpu);
+			break;
+		}
 
-			case 0x30:{
-				cpu->programCounter += sizeof(unsigned char);
-				bmi(cpu);
-				break;
-			}
+		case 0x30:{
+			cpu->programCounter += sizeof(unsigned char);
+			bmi(cpu);
+			break;
+		}
 
-			case 0xd0:{
-				cpu->programCounter += sizeof(unsigned char);
-				bne(cpu);
-				break;
-			}
+		case 0xd0:{
+			cpu->programCounter += sizeof(unsigned char);
+			bne(cpu);
+			break;
+		}
 
-			case 0x10:{
-				cpu->programCounter += sizeof(unsigned char);
-				bpl(cpu);
-				break;
-			}
+		case 0x10:{
+			cpu->programCounter += sizeof(unsigned char);
+			bpl(cpu);
+			break;
+		}
 
-			//I didn't bother making a brk instruction that just kind of how the loop works
+		case 0x00:{
+			cpu->processorStatus |= 0b00010000;
+			break;
+		}
+		//I didn't bother making a brk instruction that just kind of how the loop works
 
-			case 0x50:{
-				cpu->programCounter += sizeof(unsigned char);
-				bvc(cpu);
-				break;
-			}
+		case 0x50:{
+			cpu->programCounter += sizeof(unsigned char);
+			bvc(cpu);
+			break;
+		}
 
-			case 0x70:{
-				cpu->programCounter += sizeof(unsigned char);
-				bvs(cpu);
-				break;
-			}
+		case 0x70:{
+			cpu->programCounter += sizeof(unsigned char);
+			bvs(cpu);
+			break;
+		}
 
-			case 0xd8:{
-				cpu->programCounter += sizeof(unsigned char);
-				cld(cpu);
-				break;
-			}
+		case 0xd8:{
+			cpu->programCounter += sizeof(unsigned char);
+			cld(cpu);
+			break;
+		}
 
-			case 0x58:{
-				cpu->programCounter += sizeof(unsigned char);
-				cli(cpu);
-				break;
-			}
+		case 0x58:{
+			cpu->programCounter += sizeof(unsigned char);
+			cli(cpu);
+			break;
+		}
 
-			case 0xb8:{
-				cpu->programCounter += sizeof(unsigned char);
-				clv(cpu);
-				break;
-			}
+		case 0xb8:{
+			cpu->programCounter += sizeof(unsigned char);
+			clv(cpu);
+			break;
+		}
 
-			case 0xc9:
-			case 0xc5:
-			case 0xd5:
-			case 0xcd:
-			case 0xdd:
-			case 0xd9:
-			case 0xc1:
-			case 0xd1:{
-				cpu->programCounter += sizeof(unsigned char);
-				cmp(cpu);
-				break;
-			}
+		case 0xc9:
+		case 0xc5:
+		case 0xd5:
+		case 0xcd:
+		case 0xdd:
+		case 0xd9:
+		case 0xc1:
+		case 0xd1:{
+			cpu->programCounter += sizeof(unsigned char);
+			cmp(cpu);
+			break;
+		}
 
-			case 0xe0:
-			case 0xe4:
-			case 0xec:{
-				cpu->programCounter += sizeof(unsigned char);
-				cpx(cpu);
-				break;
-			}
+		case 0xe0:
+		case 0xe4:
+		case 0xec:{
+			cpu->programCounter += sizeof(unsigned char);
+			cpx(cpu);
+			break;
+		}
 
-			case 0xc0:
-			case 0xc4:
-			case 0xcc:{
-				cpu->programCounter += sizeof(unsigned char);
-				cpy(cpu);
-				break;
-			}
+		case 0xc0:
+		case 0xc4:
+		case 0xcc:{
+			cpu->programCounter += sizeof(unsigned char);
+			cpy(cpu);
+			break;
+		}
 
-			case 0xc6:
-			case 0xd6:
-			case 0xce:
-			case 0xde:{
-				cpu->programCounter += sizeof(unsigned char);
-				dec(cpu);
-				break;
-			}
+		case 0xc6:
+		case 0xd6:
+		case 0xce:
+		case 0xde:{
+			cpu->programCounter += sizeof(unsigned char);
+			dec(cpu);
+			break;
+		}
 
-			case 0xca:{
-				cpu->programCounter += sizeof(unsigned char);
-				dex(cpu);
-				break;
-			}
+		case 0xca:{
+			cpu->programCounter += sizeof(unsigned char);
+			dex(cpu);
+			break;
+		}
 
-			case 0x88:{
-				cpu->programCounter += sizeof(unsigned char);
-				dey(cpu);
-				break;
-			}
-	
-			case 0x49:
-			case 0x45:
-			case 0x55:
-			case 0x4d:
-			case 0x5d:
-			case 0x59:
-			case 0x41:
-			case 0x51:{
-				cpu->programCounter += sizeof(unsigned char);
-				eor(cpu);
-				break;
-			}
+		case 0x88:{
+			cpu->programCounter += sizeof(unsigned char);
+			dey(cpu);
+			break;
+		}
 
-			case 0xe6:
-			case 0xf6:
-			case 0xee:
-			case 0xfe:{
-				cpu->programCounter += sizeof(unsigned char);
-				inc(cpu);
-				break;
-			}
+		case 0x49:
+		case 0x45:
+		case 0x55:
+		case 0x4d:
+		case 0x5d:
+		case 0x59:
+		case 0x41:
+		case 0x51:{
+			cpu->programCounter += sizeof(unsigned char);
+			eor(cpu);
+			break;
+		}
 
-			case 0xe8:{
-				cpu->programCounter += sizeof(unsigned char);
-				inx(cpu);
-				break;
+		case 0xe6:
+		case 0xf6:
+		case 0xee:
+		case 0xfe:{
+			cpu->programCounter += sizeof(unsigned char);
+			inc(cpu);
+			break;
+		}
 
-			}
+		case 0xe8:{
+			cpu->programCounter += sizeof(unsigned char);
+			inx(cpu);
+			break;
 
-			case 0xc8:{
-				cpu->programCounter += sizeof(unsigned char);
-				iny(cpu);
-				break;
+		}
 
-			}
+		case 0xc8:{
+			cpu->programCounter += sizeof(unsigned char);
+			iny(cpu);
+			break;
 
-			case 0x4c:
-			case 0x6c:{
-				cpu->programCounter += sizeof(unsigned char);
-				jmp(cpu);
-				break;
-	
-			}
+		}
 
-			case 0x20:{
-				cpu->programCounter += sizeof(unsigned char);
-				jsr(cpu);
-				break;
-			}
+		case 0x4c:
+		case 0x6c:{
+			cpu->programCounter += sizeof(unsigned char);
+			jmp(cpu);
+			break;
 
-			case 0xa9:
-			case 0xa5:
-			case 0xb5:
-			case 0xad:
-			case 0xbd:
-			case 0xb9:
-			case 0xa1:
-			case 0xb1:{
-				cpu->programCounter += sizeof(unsigned char);
-				lda(cpu);
-				break;
-			}
+		}
+
+		case 0x20:{
+			cpu->programCounter += sizeof(unsigned char);
+			jsr(cpu);
+			break;
+		}
+
+		case 0xa9:
+		case 0xa5:
+		case 0xb5:
+		case 0xad:
+		case 0xbd:
+		case 0xb9:
+		case 0xa1:
+		case 0xb1:{
+			cpu->programCounter += sizeof(unsigned char);
+			lda(cpu);
+			break;
+		}
 
 
-			case 0xa2:
-			case 0xa6:
-			case 0xb6:
-			case 0xae:
-			case 0xbe:{
-				cpu->programCounter += sizeof(unsigned char);
-				ldx(cpu);
-				break;
-			}
+		case 0xa2:
+		case 0xa6:
+		case 0xb6:
+		case 0xae:
+		case 0xbe:{
+			cpu->programCounter += sizeof(unsigned char);
+			ldx(cpu);
+			break;
+		}
 
-			case 0xa0:
-			case 0xa4:
-			case 0xb4:
-			case 0xac:
-			case 0xbc:{
-				cpu->programCounter += sizeof(unsigned char);
-				ldy(cpu);
-				break;
-			}
+		case 0xa0:
+		case 0xa4:
+		case 0xb4:
+		case 0xac:
+		case 0xbc:{
+			cpu->programCounter += sizeof(unsigned char);
+			ldy(cpu);
+			break;
+		}
 
-			case 0x4a:
-			case 0x46:
-			case 0x56:
-			case 0x4e:
-			case 0x5e:{
-				cpu->programCounter += sizeof(unsigned char);
-				lsr(cpu);
-				break;
-			}
+		case 0x4a:
+		case 0x46:
+		case 0x56:
+		case 0x4e:
+		case 0x5e:{
+			cpu->programCounter += sizeof(unsigned char);
+			lsr(cpu);
+			break;
+		}
 
-			case 0xea:{	//NOP instruction
-				cpu->programCounter += sizeof(unsigned char);
-				break;
-			}
+		case 0xea:{	//NOP instruction
+			cpu->programCounter += sizeof(unsigned char);
+			break;
+		}
 
-			case 0x09:
-			case 0x05:
-			case 0x15:
-			case 0x0d:
-			case 0x1d:
-			case 0x19:
-			case 0x01:
-			case 0x11:{
-				cpu->programCounter += sizeof(unsigned char);
-				ora(cpu);
-				break;
-			}
+		case 0x09:
+		case 0x05:
+		case 0x15:
+		case 0x0d:
+		case 0x1d:
+		case 0x19:
+		case 0x01:
+		case 0x11:{
+			cpu->programCounter += sizeof(unsigned char);
+			ora(cpu);
+			break;
+		}
 
-			case 0x48:{
-				cpu->programCounter += sizeof(unsigned char);
-				pha(cpu);
-				break;
+		case 0x48:{
+			cpu->programCounter += sizeof(unsigned char);
+			pha(cpu);
+			break;
 
-			}
+		}
 
-			case 0x08:{
-				cpu->programCounter += sizeof(unsigned char);
-				php(cpu);
-				break;
-			}
+		case 0x08:{
+			cpu->programCounter += sizeof(unsigned char);
+			php(cpu);
+			break;
+		}
 
-			case 0x68:{
-				cpu->programCounter += sizeof(unsigned char);
-				pla(cpu);
-				break;
-			}
+		case 0x68:{
+			cpu->programCounter += sizeof(unsigned char);
+			pla(cpu);
+			break;
+		}
 
-			case 0x28:{
-				cpu->programCounter += sizeof(unsigned char);
-				plp(cpu);
-				break;
-			}
+		case 0x28:{
+			cpu->programCounter += sizeof(unsigned char);
+			plp(cpu);
+			break;
+		}
 
-			case 0x2a:
-			case 0x26:
-			case 0x36:
-			case 0x2e:
-			case 0x3e:{
-				cpu->programCounter += sizeof(unsigned char);
-				rol(cpu);
-				break;
-			}
-			
-			case 0x6a:
-			case 0x66:
-			case 0x76:
-			case 0x6e:
-			case 0x7e:{
-				cpu->programCounter += sizeof(unsigned char);
-				ror(cpu);
-				break;
-			}
+		case 0x2a:
+		case 0x26:
+		case 0x36:
+		case 0x2e:
+		case 0x3e:{
+			cpu->programCounter += sizeof(unsigned char);
+			rol(cpu);
+			break;
+		}
+		
+		case 0x6a:
+		case 0x66:
+		case 0x76:
+		case 0x6e:
+		case 0x7e:{
+			cpu->programCounter += sizeof(unsigned char);
+			ror(cpu);
+			break;
+		}
 
-			case 0x40:{
-				cpu->programCounter += sizeof(unsigned char);
-				rti(cpu);
-				break;
-			}
+		case 0x40:{
+			cpu->programCounter += sizeof(unsigned char);
+			rti(cpu);
+			break;
+		}
 
-			case 0x60:{
-				cpu->programCounter += sizeof(unsigned char);
-				rts(cpu);
-				break;
-			}
-	
-			case 0xe9:
-			case 0xe5:
-			case 0xf5:
-			case 0xed:
-			case 0xfd:
-			case 0xf9:
-			case 0xe1:
-			case 0xf1:{
-				cpu->programCounter += sizeof(unsigned char);
-				sbc(cpu);
-				break;
-			}
+		case 0x60:{
+			cpu->programCounter += sizeof(unsigned char);
+			rts(cpu);
+			break;
+		}
 
-			case 0x38:{
-				cpu->programCounter += sizeof(unsigned char);
-				sec(cpu);
-				break;
-			}
+		case 0xe9:
+		case 0xe5:
+		case 0xf5:
+		case 0xed:
+		case 0xfd:
+		case 0xf9:
+		case 0xe1:
+		case 0xf1:{
+			cpu->programCounter += sizeof(unsigned char);
+			sbc(cpu);
+			break;
+		}
 
-			case 0xf8:{
-				cpu->programCounter += sizeof(unsigned char);
-				sed(cpu);
-				break;
-			}
+		case 0x38:{
+			cpu->programCounter += sizeof(unsigned char);
+			sec(cpu);
+			break;
+		}
 
-			case 0x78:{
-				cpu->programCounter += sizeof(unsigned char);
-				sei(cpu);
-				break;
-			}
+		case 0xf8:{
+			cpu->programCounter += sizeof(unsigned char);
+			sed(cpu);
+			break;
+		}
 
-			case 0x85:
-			case 0x95:
-			case 0x8d:
-			case 0x9d:
-			case 0x99:
-			case 0x81:
-			case 0x91:{
-				cpu->programCounter += sizeof(unsigned char);
-				sta(cpu);
-				break;
-			}
-	
-			case 0x86:
-			case 0x96:
-			case 0x8e:{
-				cpu->programCounter += sizeof(unsigned char);
-				stx(cpu);
-				break;
-			}
+		case 0x78:{
+			cpu->programCounter += sizeof(unsigned char);
+			sei(cpu);
+			break;
+		}
 
-			case 0x84:
-			case 0x94:
-			case 0x8c:{
-				cpu->programCounter += sizeof(unsigned char);
-				sty(cpu);
-				break;
-			}
+		case 0x85:
+		case 0x95:
+		case 0x8d:
+		case 0x9d:
+		case 0x99:
+		case 0x81:
+		case 0x91:{
+			cpu->programCounter += sizeof(unsigned char);
+			sta(cpu);
+			break;
+		}
 
-			case 0xaa:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				tax(cpu);
-				break;
-			}
-			
-			case 0xa8:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				tay(cpu);
-				break;
-			}
-			
-			case 0xba:{
-				cpu->programCounter += sizeof(unsigned char);
-				tsx(cpu);
-				break;
-			}
+		case 0x86:
+		case 0x96:
+		case 0x8e:{
+			cpu->programCounter += sizeof(unsigned char);
+			stx(cpu);
+			break;
+		}
 
-			case 0x8a:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				txa(cpu);
-				break;
-			}
+		case 0x84:
+		case 0x94:
+		case 0x8c:{
+			cpu->programCounter += sizeof(unsigned char);
+			sty(cpu);
+			break;
+		}
 
-			case 0x9a:{
-				cpu->programCounter += sizeof(unsigned char);
-				txs(cpu);
-				break;
-			}
+		case 0xaa:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			tax(cpu);
+			break;
+		}
+		
+		case 0xa8:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			tay(cpu);
+			break;
+		}
+		
+		case 0xba:{
+			cpu->programCounter += sizeof(unsigned char);
+			tsx(cpu);
+			break;
+		}
 
-			case 0x98:{
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				tya(cpu);
-				break;
-			}			
+		case 0x8a:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			txa(cpu);
+			break;
+		}
 
-			default:{
-				printf("%x instructions does not exist yet\n", *(cpu->programCounter));
-				cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
-				break;
-			}
+		case 0x9a:{
+			cpu->programCounter += sizeof(unsigned char);
+			txs(cpu);
+			break;
+		}
+
+		case 0x98:{
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			tya(cpu);
+			break;
+		}			
+
+		default:{
+			printf("%x instructions does not exist yet\n", *(cpu->programCounter));
+			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			break;
 		}
 	}
 }
 
+void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
+	cpu->programCounter = &(cpu->memMap[0x600]);
+	
+	cpu->stackPointer = &(cpu->memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
+
+	loadInstructions(cpu, instructions, instructionsLen);
+
+	cpu->processorStatus &= 0;
+}
+
+/*
 int main(){	
-	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\n'};
+	unsigned char instructions[] = {0xa9, 0xc0, 0xaa, 0xe8, 0x00, '\0'};
 	
 	struct CPU cpu = {0};
 
-	cpu.programCounter = &(cpu.memMap[0x8000]);
-	
-	cpu.stackPointer = &(cpu.memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
-
-	loadInstructions(&cpu, instructions);
+	initCPU(&cpu, instruction);
 
 	cpuLoop(&cpu);
 
@@ -1856,4 +1868,4 @@ int main(){
 	printf("x = %x\n", cpu.x);
 	printf("processorStatus = %d\n", cpu.processorStatus);
 	
-}
+}*/
