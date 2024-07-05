@@ -33,6 +33,21 @@ void rendColor(SDL_Renderer *rend, unsigned char val){
 	}
 }
 
+void loadBuffer(struct CPU *cpu, unsigned char *buffer){
+	for(int i = 0; i < ROWS * COLLUMNS; i++){
+		buffer[i] = cpu->memMap[0x200 + i];
+	}
+}
+
+int checkBuffer(struct CPU *cpu, unsigned char *buffer){
+	for(int i = 0; i < ROWS * COLLUMNS; i++){
+		if(buffer[i] != cpu->memMap[0x200 + i]){
+			return 1;
+		}
+	}
+	return 0;
+}
+
 SDL_Window *initDisplay(){
 	/* Initializes the timer, audio, video, joystick,
 	haptic, gamecontroller and events subsystems */
@@ -93,13 +108,26 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
 						case SDL_SCANCODE_LEFT:
+							cpu->memMap[0xff] = 0x61;
+							printf("button pressed\n");
+						case SDL_SCANCODE_UP:
+						case SDL_SCANCODE_W:
+							cpu->memMap[0xff] = 0x77;
 							left_pressed = true;
+							printf("button pressed\n");
 							break;
 	    					case SDL_SCANCODE_D:
 						case SDL_SCANCODE_RIGHT:
+							cpu->memMap[0xff] = 0x64;
 							right_pressed = true;
+							printf("button pressed\n");
 							break;
+						case SDL_SCANCODE_S:
+						case SDL_SCANCODE_DOWN:
+							cpu->memMap[0xff] = 0x73;
+							printf("button pressed\n");
 						default:
+							cpu->memMap[0xff] = 0x64;
 							break;
 					}
 					break;
@@ -121,54 +149,61 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	  				break;
 			}
 	}
-	/* Clear screen */
-	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-	SDL_RenderClear(rend);
-	/* Move the rectangle */
-	x_change = right_pressed - left_pressed;
-	//y_change = up_pressed - down_pressed;
-	x_pos += x_change;
-	y_pos += y_change;
-	if (x_pos <= 0)
-		x_pos = 0;
-	if (x_pos >= WIDTH - rect.w)
-		x_pos = WIDTH - rect.w;
-	if (y_pos <= 0)
-		y_pos = 0;
-		rect.x = (int) x_pos;
-		rect.y = (int) y_pos;
-	/* Draw the rectangle */
-	//SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
-	//SDL_RenderFillRect(rend, &rect);
-	for(int i = 0; i < COLLUMNS; i++){
-		fflush(stdout);
-		for(int j = 0; j < ROWS; j++){
-			
-			/*if(((j + 1) % 2 != 0 && (i + 1) % 2 != 0) || ((j + 1) % 2 == 0 && (i + 1) % 2 == 0)){
-				SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
-			}
-			else{
-				SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
-			}*/
-			rendColor(rend, cpu->memMap[0x200 + (i * ROWS + j)]);
-			SDL_RenderFillRect(rend, &rects[i][j]);
-			//SDL_RenderPresent(rend);
-		}
-	}
+	unsigned char buffer[32 * 32];
+	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
+		loadBuffer(cpu, buffer);
 		time_t t;
 		srand((unsigned) time(&t));
 		cpu->memMap[0xfe] = rand() % 500;	//random number genorator for fe
 		cpuLoop(cpu);
+		bufferFlag = checkBuffer(cpu, buffer);
 		sleep(1);
 	}
-	else{
+	else{	
 		printf("CPU done\n");
 	}
 
-	/* Draw to window and loop */
-	SDL_RenderPresent(rend);
-	SDL_Delay(1000/FPS);
+
+	if(bufferFlag){
+		/* Clear screen */
+		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+		SDL_RenderClear(rend);
+		/* Move the rectangle */
+		x_change = right_pressed - left_pressed;
+		//y_change = up_pressed - down_pressed;
+		x_pos += x_change;
+		y_pos += y_change;
+		if (x_pos <= 0)
+			x_pos = 0;
+		if (x_pos >= WIDTH - rect.w)
+			x_pos = WIDTH - rect.w;
+		if (y_pos <= 0)
+			y_pos = 0;
+			rect.x = (int) x_pos;
+			rect.y = (int) y_pos;
+		/* Draw the rectangle */
+		//SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
+		//SDL_RenderFillRect(rend, &rect);
+		for(int i = 0; i < COLLUMNS; i++){
+			fflush(stdout);
+			for(int j = 0; j < ROWS; j++){
+				
+				/*if(((j + 1) % 2 != 0 && (i + 1) % 2 != 0) || ((j + 1) % 2 == 0 && (i + 1) % 2 == 0)){
+					SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
+				}
+				else{
+					SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
+				}*/
+				rendColor(rend, cpu->memMap[0x200 + (i * ROWS + j)]);
+				SDL_RenderFillRect(rend, &rects[i][j]);
+				//SDL_RenderPresent(rend);
+			}
+		}
+		/* Draw to window and loop */
+		SDL_RenderPresent(rend);
+		SDL_Delay(1000/FPS);
+		}
 	}
 	/* Release resources */
 	SDL_DestroyRenderer(rend);
