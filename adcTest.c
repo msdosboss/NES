@@ -20,22 +20,26 @@ void test_adc() {
 
     // Test case: immediate mode (opcode 0x69)
     cpu.memMap[0] = 0x69; // ADC opcode
-    cpu.memMap[1] = 0x10; // Immediate value
-    cpu.accumulator = 0x20;
+    cpu.memMap[1] = 0xd0; // Immediate value
+    cpu.accumulator = 0x90;
     adc(&cpu);
-    assert(cpu.accumulator == 0x30);
+	assert(cpu.accumulator == 0x60);
+	assert((cpu.processorStatus & 0b01000000) != 0);
+	assert((cpu.processorStatus & 0b00000001) != 0);
     //assert(cpu.programCounter == 2);
 
     // Test case: zero page (opcode 0x65)
+    cpu.programCounter = &cpu.memMap[1];
     cpu.memMap[0] = 0x65; // ADC opcode
     cpu.memMap[1] = 0x10; // Zero-page address
     cpu.memMap[0x10] = 0x10; // Value at zero-page address
     cpu.accumulator = 0x20;
     adc(&cpu);
-    assert(cpu.accumulator == 0x30);
+    assert(cpu.accumulator == 0x31);
    // assert(cpu.programCounter == 2);
 
     // Test case: zero page, X (opcode 0x75)
+    cpu.programCounter = &cpu.memMap[1];
     cpu.memMap[0] = 0x75; // ADC opcode
     cpu.memMap[1] = 0x10; // Zero-page address
     cpu.memMap[0x15] = 0x10; // Value at zero-page address + X

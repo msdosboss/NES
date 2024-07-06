@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <SDL.h>
 #include <unistd.h>
-#include <time.h>
+#include <threads.h>
 #include "6502.h"
 #include "fileio.h"
 #define COLLUMNS 32
@@ -85,7 +85,7 @@ SDL_Renderer *initRender(SDL_Window *wind){
 
 int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	/* Main loop */
-	bool running = true, left_pressed = false, right_pressed = false;
+	bool running = true, left_pressed = false, right_pressed = false, space_pressed = false;
 	float x_pos = (WIDTH-SIZE)/2, y_pos = (HEIGHT-SIZE)/2, x_change = 0, y_change = 0;
 	SDL_Rect **rects;
 	rects = malloc(sizeof(SDL_Rect *) * COLLUMNS);
@@ -110,6 +110,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 						case SDL_SCANCODE_LEFT:
 							cpu->memMap[0xff] = 0x61;
 							printf("button pressed\n");
+							break;
 						case SDL_SCANCODE_UP:
 						case SDL_SCANCODE_W:
 							cpu->memMap[0xff] = 0x77;
@@ -126,8 +127,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 						case SDL_SCANCODE_DOWN:
 							cpu->memMap[0xff] = 0x73;
 							printf("button pressed\n");
-						default:
-							cpu->memMap[0xff] = 0x64;
+						case SDL_SCANCODE_SPACE:
+							space_pressed = true;
 							break;
 					}
 					break;
@@ -153,12 +154,11 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
 		loadBuffer(cpu, buffer);
-		time_t t;
-		srand((unsigned) time(&t));
 		cpu->memMap[0xfe] = rand() % 500;	//random number genorator for fe
 		cpuLoop(cpu);
 		bufferFlag = checkBuffer(cpu, buffer);
-		sleep(1);
+		struct timespec req = {0, 50000L};
+		thrd_sleep(&req, NULL);
 	}
 	else{	
 		printf("CPU done\n");
@@ -196,7 +196,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 					SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
 				}*/
 				rendColor(rend, cpu->memMap[0x200 + (i * ROWS + j)]);
-				SDL_RenderFillRect(rend, &rects[i][j]);
+				SDL_RenderFillRect(rend, &rects[j][i]);
 				//SDL_RenderPresent(rend);
 			}
 		}

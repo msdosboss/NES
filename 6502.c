@@ -296,14 +296,15 @@ void beq(struct CPU *cpu){
 void bit(struct CPU *cpu){
 	unsigned char result;
 	switch(*(cpu->programCounter - sizeof(unsigned char))){
-		case 0x24:{
-			result = *(cpu->programCounter) & cpu->accumulator;
-			overFlag(cpu, *(cpu->programCounter));
-			negativeFlag(cpu, *(cpu->programCounter));
+		case 0x24:{	//zero page
+			unsigned char address = *(cpu->programCounter);
+			result = cpu->memMap[address] & cpu->accumulator;
+			overFlag(cpu, cpu->memMap[address]);
+			negativeFlag(cpu, cpu->memMap[address]);
 			break;
 		}
 
-		case 0x2c:{
+		case 0x2c:{	//absolute
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			result = cpu->memMap[address] & cpu->accumulator;
 			overFlag(cpu, cpu->memMap[address]);
@@ -388,6 +389,7 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xc5:{	//zero page
+			printf("cmping cpu->accumulator = %x and cpu->memMap[%x] = %x\n",cpu->accumulator, *(cpu->programCounter), cpu->memMap[*(cpu->programCounter)]);
 			result = cpu->accumulator - cpu->memMap[*(cpu->programCounter)];
 			if(cpu->accumulator >= cpu->memMap[*(cpu->programCounter)]){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
@@ -421,6 +423,7 @@ void cmp(struct CPU *cpu){
 			}
 			break;
 		}
+
 		case 0xcd:{	//absolute
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
 			result = cpu->accumulator - cpu->memMap[address];
@@ -439,6 +442,7 @@ void cmp(struct CPU *cpu){
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
+
 		case 0xdd:{	//absolute,X
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
 			result = cpu->accumulator - cpu->memMap[address];
@@ -457,6 +461,7 @@ void cmp(struct CPU *cpu){
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
+
 		case 0xd9:{	//absolute,Y
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->y;
 			result = cpu->accumulator - cpu->memMap[address];
@@ -475,6 +480,7 @@ void cmp(struct CPU *cpu){
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
+
 		case 0xc1:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
 			result = cpu->accumulator - cpu->memMap[address];
@@ -639,27 +645,31 @@ void cpy(struct CPU *cpu){
 
 void dec(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter) - sizeof(unsigned char)){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
 		case 0xc6:{
-			result = --cpu->memMap[*(cpu->programCounter)];
+			--cpu->memMap[*(cpu->programCounter)];
+			result = cpu->memMap[*(cpu->programCounter)];
 			break;
 		}
 
 		case 0xd6:{
-			result = --cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+			--cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+			result = cpu->memMap[(*(cpu->programCounter) + cpu->x)];
 			break;
 		}
 
 		case 0xce:{
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = --cpu->memMap[address];
+			--cpu->memMap[address];
+			result = cpu->memMap[address];
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 
 		case 0xde:{
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			result = --cpu->memMap[address];
+			cpu->memMap[address];
+			result = cpu->memMap[address];
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
@@ -748,27 +758,31 @@ void eor(struct CPU *cpu){
 
 void inc(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter) - sizeof(unsigned char)){
+	switch(*(cpu->programCounter - sizeof(unsigned char))){
 		case 0xe6:{
-			result = ++cpu->memMap[*(cpu->programCounter)];
+			++cpu->memMap[*(cpu->programCounter)];
+			result = cpu->memMap[*(cpu->programCounter)];
 			break;
 		}
 
 		case 0xf6:{
-			result = ++cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+			++cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+			result = cpu->memMap[(*(cpu->programCounter) + cpu->x)];
 			break;
 		}
 
 		case 0xee:{
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = ++cpu->memMap[address];
+			++cpu->memMap[address];
+			result = cpu->memMap[address];
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
 
 		case 0xfe:{
 			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			result = ++cpu->memMap[address];
+			++cpu->memMap[address];
+			result = cpu->memMap[address];
 			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
 			break;
 		}
@@ -835,6 +849,7 @@ void lda(struct CPU *cpu){
 		
 		case 0xb5:{	//zero page,X
 			unsigned char address = *(cpu->programCounter) + cpu->x;
+			printf("address = %x\n", address);
 			arg = cpu->memMap[address];
 			cpu->accumulator = arg;
 			break;
@@ -1313,8 +1328,7 @@ void sbc(struct CPU *cpu){
 
 	}
 	
-	result = cpu->accumulator - val - (cpu->processorStatus & 0b00000001);
-	
+	result = cpu->accumulator - val - !(cpu->processorStatus & 0b00000001);
 	if(result <= 0xff){	//Set carry flag
 		cpu->processorStatus |= 0b00000001;
 	}
@@ -1345,7 +1359,7 @@ void sed(struct CPU *cpu){
 }
 
 void sei(struct CPU *cpu){
-	cpu->processorStatus |= 0b10000100;	//turn interrupt flag on
+	cpu->processorStatus |= 0b00000100;	//turn interrupt flag on
 }
 
 void sta(struct CPU *cpu){
@@ -1493,7 +1507,7 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 }
 
 void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
-	printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\ncpu->x = %x\n", *(cpu->programCounter), cpu->programCounter - cpu->memMap, cpu->processorStatus, cpu->accumulator, cpu->x);
+	printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\ncpu->memMap[0xff] = %x and cpu->memMap[0x02] = %x\n", *(cpu->programCounter), cpu->programCounter - cpu->memMap, cpu->processorStatus, cpu->accumulator, cpu->memMap[0xff], cpu->memMap[0x02]);
 
 	switch(*(cpu->programCounter)){
 		case 0x69:
