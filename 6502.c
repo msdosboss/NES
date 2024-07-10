@@ -5,6 +5,7 @@
 	unsigned char memMap[65536];
 	unsigned char *programCounter;
 	unsigned char *stackPointer;
+	struct Bus bus;
 };*/
 
 void zeroFlag(struct CPU *cpu, unsigned char reg){

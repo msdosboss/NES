@@ -1,17 +1,22 @@
 #ifndef CPU_H
 #define CPU_H
 
+#define RAMOFFSET 0
+
 #include <stdio.h>
 #include <stdlib.h>
+#include "bus.h"
 
 struct CPU {
 	unsigned char *programCounter;
+	unsigned short PC;
 	unsigned char *stackPointer;
 	unsigned char accumulator;
 	unsigned char x;
 	unsigned char y;
 	unsigned char processorStatus;
 	unsigned char memMap[65536];  // 64KB memory
+	struct Bus bus;
 };
 
 void zeroFlag(struct CPU *cpu, unsigned char reg);
