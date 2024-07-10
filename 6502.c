@@ -390,7 +390,6 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xc5:{	//zero page
-			printf("cmping cpu->accumulator = %x and cpu->memMap[%x] = %x\n",cpu->accumulator, *(cpu->programCounter), cpu->memMap[*(cpu->programCounter)]);
 			result = cpu->accumulator - cpu->memMap[*(cpu->programCounter)];
 			if(cpu->accumulator >= cpu->memMap[*(cpu->programCounter)]){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
@@ -1507,7 +1506,7 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 	}
 }
 
-void cpuLoop(struct CPU *cpu){	//asl still needs to be added to the loop
+void cpuLoop(struct CPU *cpu){
 	printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\ncpu->memMap[0xff] = %x and cpu->memMap[0x02] = %x\n", *(cpu->programCounter), cpu->programCounter - cpu->memMap, cpu->processorStatus, cpu->accumulator, cpu->memMap[0xff], cpu->memMap[0x02]);
 
 	switch(*(cpu->programCounter)){

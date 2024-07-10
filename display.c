@@ -165,7 +165,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	}
 
 
-	if(bufferFlag){
+	if(bufferFlag){	//check if buff changed
 		/* Clear screen */
 		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 		SDL_RenderClear(rend);
@@ -217,6 +217,7 @@ int main(int argc, char* argv[]){
 
 	if(argc < 2){
 		printf("Please enter a rom to run");
+		return 1;
 	}
 
 	struct Rom rom = loadRom(argv[1]);
