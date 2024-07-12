@@ -69,21 +69,17 @@ unsigned short indirectAddress(struct CPU *cpu){
 void push(struct CPU *cpu, unsigned char val){
 	cpu->stackPointer = cpu->stackPointer - sizeof(unsigned char);
 	*cpu->stackPointer = val;
-	printf("*cpu->stackPointer = %x\n", *cpu->stackPointer);
 }
 
 unsigned char pop(struct CPU *cpu){
 	cpu->stackPointer = cpu->stackPointer + sizeof(unsigned char);
-	printf("pop = %x\n", *(cpu->stackPointer - sizeof(unsigned char)));
 	return *(cpu->stackPointer - sizeof(unsigned char));
 }
 
 unsigned short popAbsoluteAddress(struct CPU *cpu){
 	unsigned short address = 0;
 	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
-	printf("popAddress = %x\n", address);
 	address |= pop(cpu);
-	printf("popAddress = %x\n", address);
 	return address;
 }
 
@@ -849,10 +845,8 @@ void jmp(struct CPU *cpu){
 void jsr(struct CPU *cpu){
 	unsigned short index = cpu->PC + 1;	//I really dont know why the + 1 is here but it works so yeah...
 	//unsigned short index = cpu->programCounter - (cpu->memMap + 1);
-	printf("index pushed = %x\n", (unsigned char)index);
 	push(cpu, (unsigned char)(index));	//pushes the first 8 bits of the address to stack
 	index = index >> 8;
-	printf("index pushed = %x\n", (unsigned char)index);
 	push(cpu, (unsigned char)(index));
 	unsigned short address = absoluteAddress(cpu, cpu->PC);
 	cpu->PC = address;
