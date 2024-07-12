@@ -35,13 +35,13 @@ void rendColor(SDL_Renderer *rend, unsigned char val){
 
 void loadBuffer(struct CPU *cpu, unsigned char *buffer){
 	for(int i = 0; i < ROWS * COLLUMNS; i++){
-		buffer[i] = cpu->memMap[0x200 + i];
+		buffer[i] = busRead(&(cpu->bus), 0x200 + i);
 	}
 }
 
 int checkBuffer(struct CPU *cpu, unsigned char *buffer){
 	for(int i = 0; i < ROWS * COLLUMNS; i++){
-		if(buffer[i] != cpu->memMap[0x200 + i]){
+		if(buffer[i] != busRead(&(cpu->bus), 0x200 + i)){
 			return 1;
 		}
 	}
@@ -108,24 +108,24 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
 						case SDL_SCANCODE_LEFT:
-							cpu->memMap[0xff] = 0x61;
+							busWrite(&(cpu->bus), 0xff, 0x61);
 							printf("button pressed\n");
 							break;
 						case SDL_SCANCODE_UP:
 						case SDL_SCANCODE_W:
-							cpu->memMap[0xff] = 0x77;
+							busWrite(&(cpu->bus), 0xff, 0x77);
 							left_pressed = true;
 							printf("button pressed\n");
 							break;
 	    					case SDL_SCANCODE_D:
 						case SDL_SCANCODE_RIGHT:
-							cpu->memMap[0xff] = 0x64;
+							busWrite(&(cpu->bus), 0xff, 0x64);
 							right_pressed = true;
 							printf("button pressed\n");
 							break;
 						case SDL_SCANCODE_S:
 						case SDL_SCANCODE_DOWN:
-							cpu->memMap[0xff] = 0x73;
+							busWrite(&(cpu->bus), 0xff, 0x73);
 							printf("button pressed\n");
 						case SDL_SCANCODE_SPACE:
 							space_pressed = true;
@@ -154,7 +154,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
 		loadBuffer(cpu, buffer);
-		cpu->memMap[0xfe] = rand() % 500;	//random number genorator for fe
+		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
 		cpuLoop(cpu);
 		bufferFlag = checkBuffer(cpu, buffer);
 		struct timespec req = {0, 50000L};
@@ -195,7 +195,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 				else{
 					SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
 				}*/
-				rendColor(rend, cpu->memMap[0x200 + (i * ROWS + j)]);
+				rendColor(rend, busRead(&(cpu->bus), 0x200 + (i * ROWS + j)));
 				SDL_RenderFillRect(rend, &rects[j][i]);
 				//SDL_RenderPresent(rend);
 			}
@@ -226,7 +226,7 @@ int main(int argc, char* argv[]){
 
 	initCPU(&cpu, rom.hexVals, rom.len);
 
-	printf("PC = %x\n", *(cpu.programCounter));
+	printf("PC = %x\n", busRead(&(cpu.bus), cpu.PC));
 
 	SDL_Window *wind = initDisplay();
 

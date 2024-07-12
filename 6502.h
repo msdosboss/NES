@@ -8,14 +8,12 @@
 #include "bus.h"
 
 struct CPU {
-	unsigned char *programCounter;
 	unsigned short PC;
 	unsigned char *stackPointer;
 	unsigned char accumulator;
 	unsigned char x;
 	unsigned char y;
 	unsigned char processorStatus;
-	unsigned char memMap[65536];  // 64KB memory
 	struct Bus bus;
 };
 
@@ -23,7 +21,7 @@ void zeroFlag(struct CPU *cpu, unsigned char reg);
 void negativeFlag(struct CPU *cpu, unsigned char reg);
 void carryFlag(struct CPU *cpu, unsigned char reg);
 void overFlag(struct CPU *cpu, unsigned char reg);
-unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint);
+unsigned short absoluteAddress(struct CPU *cpu, unsigned short startingPoint);
 unsigned short indirectYAddress(struct CPU *cpu);
 unsigned short indirectXAddress(struct CPU *cpu);
 void push(struct CPU *cpu, unsigned char val);

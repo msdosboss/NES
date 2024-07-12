@@ -2,8 +2,7 @@
 
 /*struct CPU{
 	unsigned char accumulator, x, y, processorStatus;
-	unsigned char memMap[65536];
-	unsigned char *programCounter;
+	unsigned short PC;
 	unsigned char *stackPointer;
 	struct Bus bus;
 };*/
@@ -44,90 +43,97 @@ void overFlag(struct CPU *cpu, unsigned char reg){
 	}
 }
 
-unsigned short absoluteAddress(struct CPU *cpu, unsigned char *startingPoint){	//this is kind of a bad name because it's used in indirect address mode as well
-	unsigned short address = *(startingPoint + sizeof(unsigned char));	//putting the 2 arg byte in front because this is little eddien 
+unsigned short absoluteAddress(struct CPU *cpu, unsigned short startingPoint){	//this is kind of a bad name because it's used in indirect address mode as well
+	unsigned short address = busRead(&(cpu->bus), startingPoint + 1);	//putting the 2 arg byte in front because this is little eddien 
 	address = address << 8;	//making room for the first arg
-	address = address | *(startingPoint);	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
+	address = address | busRead(&(cpu->bus), startingPoint);	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
 	return address;
 }
 
 unsigned short indirectXAddress(struct CPU *cpu){
-	unsigned char indirectAddress = *(cpu->programCounter);
+	unsigned char indirectAddress = busRead(&(cpu->bus), cpu->PC);
 	indirectAddress = indirectAddress + cpu->x;
-	return absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+	return absoluteAddress(cpu, indirectAddress);
 }
 
 unsigned short indirectYAddress(struct CPU *cpu){
-	unsigned char indirectAddress = *(cpu->programCounter);
-	return absoluteAddress(cpu, &(cpu->memMap[indirectAddress])) + cpu->y;
+	unsigned char indirectAddress = busRead(&(cpu->bus), cpu->PC);
+	return absoluteAddress(cpu, indirectAddress) + cpu->y;
 }
 
 unsigned short indirectAddress(struct CPU *cpu){
-	unsigned short indirectAddress = absoluteAddress(cpu, cpu->programCounter);
-	return absoluteAddress(cpu, &(cpu->memMap[indirectAddress]));
+	unsigned short indirectAddress = absoluteAddress(cpu, cpu->PC);
+	return absoluteAddress(cpu, indirectAddress);
 }
 
 void push(struct CPU *cpu, unsigned char val){
 	cpu->stackPointer = cpu->stackPointer - sizeof(unsigned char);
 	*cpu->stackPointer = val;
+	printf("*cpu->stackPointer = %x\n", *cpu->stackPointer);
 }
 
 unsigned char pop(struct CPU *cpu){
 	cpu->stackPointer = cpu->stackPointer + sizeof(unsigned char);
+	printf("pop = %x\n", *(cpu->stackPointer - sizeof(unsigned char)));
 	return *(cpu->stackPointer - sizeof(unsigned char));
 }
 
 unsigned short popAbsoluteAddress(struct CPU *cpu){
 	unsigned short address = 0;
 	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
+	printf("popAddress = %x\n", address);
 	address |= pop(cpu);
+	printf("popAddress = %x\n", address);
 	return address;
 }
 
 void adc(struct CPU *cpu){
 	unsigned short result;
 	unsigned char val;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x69:{	//immediate
-			val = *(cpu->programCounter);
+			val = busRead(&(cpu->bus), cpu->PC);
 			break;
 		}
 		
 		case 0x65:{	//zero page
-			val = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 
 		case 0x75:{	//zero page,X
-			val = cpu->memMap[*(cpu->programCounter) + cpu->x];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 		
 		case 0x6d:{	//absolute
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
-			cpu->programCounter += sizeof(unsigned char);
+			val = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x7d:{	//absolute,X
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter) + cpu->x];
-			cpu->programCounter += sizeof(unsigned char);
+			val = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->x);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x79:{	//absolute,Y
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
-			cpu->programCounter += sizeof(unsigned char);
+			val = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->y);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x61:{	//indirect,X
-			val = cpu->memMap[indirectXAddress(cpu)];
+			val = busRead(&(cpu->bus), indirectXAddress(cpu));
 			break;
 		}
 
 		case 0x71:{
-			val = cpu->memMap[indirectYAddress(cpu)];
+			val = busRead(&(cpu->bus), indirectYAddress(cpu));
 			break;
 		}
 
@@ -153,68 +159,67 @@ void adc(struct CPU *cpu){
 
 	zeroFlag(cpu, cpu->accumulator);
 	negativeFlag(cpu, cpu->accumulator);
-	cpu->programCounter += sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void and(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x29:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
 		}
 		
 		case 0x25:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address );
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
 		}
 
 		case 0x35:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
 		}
 		case 0x2d:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC));
 			cpu->accumulator = cpu->accumulator & arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//note absolute addressing take 3 bytes so the program counter will have to be interated twice for the absolute calls
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x3d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->x];
+			arg = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->x);
 			cpu->accumulator = cpu->accumulator & arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x39:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->y];
+			arg = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->y);
 			cpu->accumulator = cpu->accumulator & arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		case 0x21:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
 		}
 		case 0x31:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
 		
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	negativeFlag(cpu, cpu->accumulator);
 
@@ -222,7 +227,8 @@ void and(struct CPU *cpu){
 }
 
 void asl(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){	//note with these shifts I am still assuming that when you shift a bit in from the left it will always be 0, if that is not the case this will not work
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){	//note with these shifts I am still assuming that when you shift a bit in from the left it will always be 0, if that is not the case this will not work
 		case 0x0a:{	//accumulator
 			carryFlag(cpu, cpu->accumulator);
 			cpu->accumulator = cpu->accumulator << 1;
@@ -232,42 +238,43 @@ void asl(struct CPU *cpu){
 		}
 
 		case 0x06:{	//zero page
-			carryFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
-			cpu->memMap[*(cpu->programCounter)] = cpu->memMap[*(cpu->programCounter)] << 1;
-			negativeFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
-			zeroFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			carryFlag(cpu, busRead(&(cpu->bus), address));
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) << 1);
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x16:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			carryFlag(cpu, cpu->memMap[address]);
-			cpu->memMap[address] = cpu->memMap[address] << 1;
-			negativeFlag(cpu, cpu->memMap[address]);
-			zeroFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			carryFlag(cpu, busRead(&(cpu->bus), address));
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) << 1);
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x0e:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			carryFlag(cpu, cpu->memMap[address]);
-			cpu->memMap[address] = cpu->memMap[address] << 1;
-			negativeFlag(cpu, cpu->memMap[address]);
-			zeroFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter = cpu->programCounter + (sizeof(unsigned char) * 2);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			carryFlag(cpu, busRead(&(cpu->bus), address));
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) << 1);
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 
 		case 0x1e:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			address = address + cpu->x; 
-			carryFlag(cpu, cpu->memMap[address]);
-			cpu->memMap[address] = cpu->memMap[address] << 1;
-			negativeFlag(cpu, cpu->memMap[address]);
-			zeroFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter = cpu->programCounter + (sizeof(unsigned char) * 2);
+			carryFlag(cpu, busRead(&(cpu->bus), address));
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) << 1);
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 	}
@@ -275,82 +282,83 @@ void asl(struct CPU *cpu){
 
 void bcc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) == 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bcs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) != 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void beq(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) != 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bit(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x24:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			result = cpu->memMap[address] & cpu->accumulator;
-			overFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			result = busRead(&(cpu->bus), address) & cpu->accumulator;
+			overFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&cpu->bus, address));
 			break;
 		}
 
 		case 0x2c:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = cpu->memMap[address] & cpu->accumulator;
-			overFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			result = busRead(&(cpu->bus), address) & cpu->accumulator;
+			overFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	zeroFlag(cpu, result);
 }
 
 void bmi(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) == 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bne(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) == 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bpl(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) == 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bvc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) == 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void bvs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) != 0){
-		cpu->programCounter = cpu->programCounter + (char)*(cpu->programCounter);
+		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void clc(struct CPU *cpu){
@@ -371,16 +379,17 @@ void clv(struct CPU *cpu){
 
 void cmp(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xc9:{	//immediate
-			result = cpu->accumulator - *(cpu->programCounter);
-			if(cpu->accumulator >= *(cpu->programCounter)){	//I could do this more cleverly with carryFlag(cpu, (cpu->accumulator >= *cpu->programCounter) * 0b10000000) but I think that is harder to read so I prefer this
+			result = cpu->accumulator - busRead(&(cpu->bus), cpu->PC);
+			if(cpu->accumulator >= busRead(&(cpu->bus), cpu->PC)){	//I could do this more cleverly with carryFlag(cpu, (cpu->accumulator >= *cpu->programCounter) * 0b10000000) but I think that is harder to read so I prefer this
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == *(cpu->programCounter)){	//I could do this more cleverly with zeroFlag(cpu, !(cpu->accumulator == *(cpu->programCounter))); but I think that is harder to read so I prefer this
+			if(cpu->accumulator == busRead(&(cpu->bus), cpu->PC)){	//I could do this more cleverly with zeroFlag(cpu, !(cpu->accumulator == *(cpu->programCounter))); but I think that is harder to read so I prefer this
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -390,14 +399,15 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xc5:{	//zero page
-			result = cpu->accumulator - cpu->memMap[*(cpu->programCounter)];
-			if(cpu->accumulator >= cpu->memMap[*(cpu->programCounter)]){
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[*(cpu->programCounter)]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -407,15 +417,15 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xd5:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -425,72 +435,72 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xcd:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
 				zeroFlag(cpu, 1);	
 			}
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xdd:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
 				zeroFlag(cpu, 1);	
 			}
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xd9:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->y;
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
 				zeroFlag(cpu, 1);	
 			}
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xc1:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -501,14 +511,14 @@ void cmp(struct CPU *cpu){
 
 		case 0xd1:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
-			result = cpu->accumulator - cpu->memMap[address];
-			if(cpu->accumulator >= cpu->memMap[address]){
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->accumulator == cpu->memMap[address]){
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -517,22 +527,23 @@ void cmp(struct CPU *cpu){
 			break;
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	negativeFlag(cpu, result);
 }
 
 void cpx(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xe0:{	//immediate
-			result = cpu->x - *(cpu->programCounter);
-			if(cpu->x >= *(cpu->programCounter)){
+			result = cpu->x - busRead(&(cpu->bus), cpu->PC);
+			if(cpu->x >= busRead(&(cpu->bus), cpu->PC)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->x == *(cpu->programCounter)){
+			if(cpu->x == busRead(&(cpu->bus), cpu->PC)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -542,14 +553,15 @@ void cpx(struct CPU *cpu){
 		}
 
 		case 0xe4:{	//zero page
-			result = cpu->x - cpu->memMap[*(cpu->programCounter)];
-			if(cpu->x >= cpu->memMap[*(cpu->programCounter)]){
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			result = cpu->x - busRead(&(cpu->bus), address);
+			if(cpu->x >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->x == cpu->memMap[*(cpu->programCounter)]){
+			if(cpu->x == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -559,41 +571,42 @@ void cpx(struct CPU *cpu){
 		}
 
 		case 0xec:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = cpu->x - cpu->memMap[address];
-			if(cpu->x >= cpu->memMap[address]){
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			result = cpu->x - busRead(&(cpu->bus), address);
+			if(cpu->x >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->x == cpu->memMap[address]){
+			if(cpu->x == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
 				zeroFlag(cpu, 1);
 			}
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	negativeFlag(cpu, result);
 }
 
 void cpy(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xc0:{	//immediate
-			result = cpu->x - *(cpu->programCounter);
-			if(cpu->y >= *(cpu->programCounter)){
+			result = cpu->x - busRead(&(cpu->bus), cpu->PC);
+			if(cpu->y >= busRead(&(cpu->bus), cpu->PC)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->y == *(cpu->programCounter)){
+			if(cpu->y == busRead(&(cpu->bus), cpu->PC)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -603,14 +616,15 @@ void cpy(struct CPU *cpu){
 		}
 
 		case 0xc4:{	//zero page
-			result = cpu->y - cpu->memMap[*(cpu->programCounter)];
-			if(cpu->y >= cpu->memMap[*(cpu->programCounter)]){
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			result = cpu->y - busRead(&(cpu->bus), address);
+			if(cpu->y >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->y == cpu->memMap[*(cpu->programCounter)]){
+			if(cpu->y == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
@@ -620,61 +634,64 @@ void cpy(struct CPU *cpu){
 		}
 
 		case 0xcc:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			result = cpu->y - cpu->memMap[address];
-			if(cpu->y >= cpu->memMap[address]){
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			result = cpu->y - busRead(&(cpu->bus), address);
+			if(cpu->y >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
 			else{
 				carryFlag(cpu, 0);
 			}
-			if(cpu->y == cpu->memMap[address]){
+			if(cpu->y == busRead(&(cpu->bus), address)){
 				zeroFlag(cpu, 0);	//set zero flag on
 			}
 			else{
 				zeroFlag(cpu, 1);
 			}
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	negativeFlag(cpu, result);
 }
 
 void dec(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
-		case 0xc6:{
-			--cpu->memMap[*(cpu->programCounter)];
-			result = cpu->memMap[*(cpu->programCounter)];
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
+		case 0xc6:{	//zero page
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) - 1);
+			result = busRead(&(cpu->bus), address);
 			break;
 		}
 
-		case 0xd6:{
-			--cpu->memMap[(*(cpu->programCounter) + cpu->x)];
-			result = cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+		case 0xd6:{	//zero page,X
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) - 1);
+			result = busRead(&(cpu->bus), address);
 			break;
 		}
 
-		case 0xce:{
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			--cpu->memMap[address];
-			result = cpu->memMap[address];
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+		case 0xce:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) - 1);
+			result = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 
-		case 0xde:{
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			cpu->memMap[address];
-			result = cpu->memMap[address];
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+		case 0xde:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) - 1);
+			result = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	zeroFlag(cpu, result);
 	negativeFlag(cpu, result);
 }
@@ -693,63 +710,65 @@ void dey(struct CPU *cpu){
 
 void eor(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x49:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
 		}
 		
 		case 0x45:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
 		}
 
 		case 0x55:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
 		}
 		case 0x4d:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//note absolute addressing take 3 bytes so the program counter will have to be interated twice for the absolute calls
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x5d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->x];
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x59:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->y];
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		case 0x41:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
 		}
 		case 0x51:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
 		
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	negativeFlag(cpu, cpu->accumulator);
 
@@ -758,36 +777,39 @@ void eor(struct CPU *cpu){
 
 void inc(struct CPU *cpu){
 	unsigned char result;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
-		case 0xe6:{
-			++cpu->memMap[*(cpu->programCounter)];
-			result = cpu->memMap[*(cpu->programCounter)];
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
+		case 0xe6:{	//zero page
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) + 1);
+			result = busRead(&(cpu->bus), address);
 			break;
 		}
 
-		case 0xf6:{
-			++cpu->memMap[(*(cpu->programCounter) + cpu->x)];
-			result = cpu->memMap[(*(cpu->programCounter) + cpu->x)];
+		case 0xf6:{	//zero page,X
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) + 1);
+			result = busRead(&(cpu->bus), address);
 			break;
 		}
 
-		case 0xee:{
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			++cpu->memMap[address];
-			result = cpu->memMap[address];
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+		case 0xee:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) + 1);
+			result = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 
-		case 0xfe:{
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			++cpu->memMap[address];
-			result = cpu->memMap[address];
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+		case 0xfe:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) + 1);
+			result = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	zeroFlag(cpu, result);
 	negativeFlag(cpu, result);
 }
@@ -809,97 +831,102 @@ void iny(struct CPU *cpu){
 }
 
 void jmp(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x4c:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			cpu->programCounter = &cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->PC = address;
 			break;
 		}
 		case 0x6c:{	//indirect
 			unsigned short address = indirectAddress(cpu);
-			cpu->programCounter = &cpu->memMap[address]; 
+			cpu->PC = address; 
 			break;
 		}
 	}
 }
 
 void jsr(struct CPU *cpu){
-	unsigned short index = cpu->programCounter - (cpu->memMap + 1);
+	unsigned short index = cpu->PC + 1;	//I really dont know why the + 1 is here but it works so yeah...
+	//unsigned short index = cpu->programCounter - (cpu->memMap + 1);
+	printf("index pushed = %x\n", (unsigned char)index);
 	push(cpu, (unsigned char)(index));	//pushes the first 8 bits of the address to stack
 	index = index >> 8;
+	printf("index pushed = %x\n", (unsigned char)index);
 	push(cpu, (unsigned char)(index));
-	unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-	cpu->programCounter = &cpu->memMap[address];
+	unsigned short address = absoluteAddress(cpu, cpu->PC);
+	cpu->PC = address;
 }
 
 void lda(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xa9:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->accumulator = arg;
 			break;
 		}		
 
 		case 0xa5:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			break;
 		}
 		
 		case 0xb5:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			printf("address = %x\n", address);
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			break;
 		}
 		
 		case 0xad:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xbd:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->x];	//this is what makes it different from absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xb9:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->y];	//this is what makes it different from absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0xa1:{	//(indirect,X)
 			unsigned short address = indirectXAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			break;
 		}
 
 		case 0xb1:{	//(indirect,Y)
 			unsigned short address = indirectYAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			break;
 		}
 
 		default:{
-			printf("instruction %x is not part of LDA\n", *(cpu->programCounter - sizeof(unsigned char)));
+			printf("instruction %x is not part of LDA\n", cpu->PC - 1);
 			break;
 		}
 			
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	zeroFlag(cpu, cpu->accumulator);
 	
@@ -908,49 +935,51 @@ void lda(struct CPU *cpu){
 
 void ldx(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xa2:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->x = arg;
 			break;
 		}		
 
 		case 0xa6:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->x = arg;
 			break;
 		}
 		
 		case 0xb6:{	//zero page,Y
-			unsigned char address = *(cpu->programCounter) + cpu->y;
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
 			cpu->x = arg;
 			break;
 		}
 		
 		case 0xae:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->x = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xbe:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->y];	//this is what makes it different from absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
 			cpu->x = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}	
 
 		default:{
-			printf("instruction %x is not part of LDX\n", *(cpu->programCounter - sizeof(unsigned char)));
+			printf("instruction %x is not part of LDX\n", busRead(&(cpu->bus), cpu->PC));
 			break;
 		}
 			
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	zeroFlag(cpu, cpu->x);
 	
@@ -959,49 +988,51 @@ void ldx(struct CPU *cpu){
 
 void ldy(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0xa0:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->y = arg;
 			break;
 		}		
 
 		case 0xa4:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->y = arg;
 			break;
 		}
 		
 		case 0xb4:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->y = arg;
 			break;
 		}
 		
 		case 0xac:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->y = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xbc:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->x];	//this is what makes it different from absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->y = arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}	
 
 		default:{
-			printf("instruction %x is not part of LDY\n", *(cpu->programCounter - sizeof(unsigned char)));
+			printf("instruction %x is not part of LDY\n", busRead(&(cpu->bus), cpu->PC));
 			break;
 		}
 			
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	zeroFlag(cpu, cpu->y);
 	
@@ -1009,7 +1040,8 @@ void ldy(struct CPU *cpu){
 }
 
 void lsr(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x4a:{	//accumulator
 			carryFlag(cpu, (cpu->accumulator << 7));	//The carryFlag func checks if the last bit is on and then sets the flag accordingly. In this use of it we are trying to see if the bit that is being shifted out (0th bit) is on.
 			cpu->accumulator = cpu->accumulator >> 1;
@@ -1019,40 +1051,42 @@ void lsr(struct CPU *cpu){
 		}
 		
 		case 0x46:{	//zero page
-			carryFlag(cpu, (cpu->memMap[*(cpu->programCounter)] << 7));
-			cpu->memMap[*(cpu->programCounter)] = cpu->memMap[*(cpu->programCounter)] >> 1;
-			zeroFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
-			negativeFlag(cpu, cpu->memMap[*(cpu->programCounter)]);
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x56:{	//zero page,X
-			carryFlag(cpu, (cpu->memMap[*(cpu->programCounter) + cpu->x] << 7));
-			cpu->memMap[*(cpu->programCounter) + cpu->x] = cpu->memMap[*(cpu->programCounter) + cpu->x] >> 1;
-			zeroFlag(cpu, cpu->memMap[*(cpu->programCounter) + cpu->x]);
-			negativeFlag(cpu, cpu->memMap[*(cpu->programCounter) + cpu->x]);
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x4e:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			carryFlag(cpu, (cpu->memMap[address] << 7));
-			cpu->memMap[address] >>= 1;
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 
 		case 0x5e:{	//absoult,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			carryFlag(cpu, (cpu->memMap[address] << 7));
-			cpu->memMap[address] >>= 1;
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 	}
@@ -1060,63 +1094,65 @@ void lsr(struct CPU *cpu){
 
 void ora(struct CPU *cpu){
 	unsigned char arg;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x09:{	//immediate
-			arg = *(cpu->programCounter);
+			arg = busRead(&(cpu->bus), cpu->PC);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
 		}
 		
 		case 0x05:{	//zero page
-			arg = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
 		}
 
 		case 0x15:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			arg = cpu->memMap[address];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
 		}
 		case 0x0d:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address];
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);	//note absolute addressing take 3 bytes so the program counter will have to be interated twice for the absolute calls
+			cpu->PC++;	//note absolute addressing take 3 bytes so the program counter will have to be interated twice for the absolute calls
 			break;
 		}
 		
 		case 0x1d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->x];
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0x19:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			arg = cpu->memMap[address + cpu->y];
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 		case 0x01:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
 		}
 		case 0x11:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
-			arg = cpu->memMap[address];
+			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
 		
 		}
 	}
-	cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+	cpu->PC++;
 	
 	negativeFlag(cpu, cpu->accumulator);
 
@@ -1145,7 +1181,8 @@ void plp(struct CPU *cpu){
 
 void rol(struct CPU *cpu){
 	unsigned char preShiftVal;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x2a:{	//accumulator
 			preShiftVal = cpu->accumulator;
 			cpu->accumulator <<= 1;
@@ -1157,50 +1194,50 @@ void rol(struct CPU *cpu){
 		}
 
 		case 0x26:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] <<= 1;
-			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal << 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x36:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] <<= 1;
-			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal << 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x2e:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] <<= 1;
-			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			unsigned char address = absoluteAddress(cpu, cpu->PC);
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal << 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 
 		case 0x3e:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] <<= 1;
-			cpu->memMap[address] |= (cpu->processorStatus & 0b00000001);
+			unsigned char address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal << 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 	}
@@ -1208,7 +1245,8 @@ void rol(struct CPU *cpu){
 
 void ror(struct CPU *cpu){
 	unsigned char preShiftVal;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x6a:{	//accumulator
 			preShiftVal = cpu->accumulator;
 			cpu->accumulator >>= 1;
@@ -1220,50 +1258,50 @@ void ror(struct CPU *cpu){
 		}
 
 		case 0x66:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] >>= 1;
-			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal >> 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x76:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] >>= 1;
-			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal >> 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char);
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
 			break;
 		}
 
 		case 0x6e:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] >>= 1;
-			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal >> 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 
 		case 0x7e:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			preShiftVal = cpu->memMap[address];
-			cpu->memMap[address] >>= 1;
-			cpu->memMap[address] |= (cpu->processorStatus << 7);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			preShiftVal = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, preShiftVal >> 1);
+			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
 			carryFlag(cpu, preShiftVal);
-			zeroFlag(cpu, cpu->memMap[address]);
-			negativeFlag(cpu, cpu->memMap[address]);
-			cpu->programCounter += sizeof(unsigned char) * 2;
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC += 2;
 			break;
 		}
 	}
@@ -1271,58 +1309,65 @@ void ror(struct CPU *cpu){
 
 void rti(struct CPU *cpu){
 	cpu->processorStatus = pop(cpu);
-	cpu->programCounter = &cpu->memMap[popAbsoluteAddress(cpu)];
+	cpu->PC = popAbsoluteAddress(cpu);
 }
 
 void rts(struct CPU *cpu){
-	cpu->programCounter = &cpu->memMap[popAbsoluteAddress(cpu) + 1];
-	cpu->programCounter += sizeof(unsigned char) * 2;
+	cpu->PC = popAbsoluteAddress(cpu) + 1;
 }
 
 void sbc(struct CPU *cpu){
 	unsigned short result;
 	unsigned char val;
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);	
+	switch(opCode){
 		case 0xe9:{	//immediate
-			val = *(cpu->programCounter);
+			val = busRead(&(cpu->bus), cpu->PC);
 			break;
 		}
 		
 		case 0xe5:{	//zero page
-			val = cpu->memMap[*(cpu->programCounter)];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 
 		case 0xf5:{	//zero page,X
-			val = cpu->memMap[*(cpu->programCounter) + cpu->x];
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 		
 		case 0xed:{	//absolute
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			val = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 
 		case 0xfd:{	//absolute,X
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter) + cpu->x];
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			val = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0xf9:{	//absolute,Y
-			val = cpu->memMap[absoluteAddress(cpu, cpu->programCounter)];
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			val = busRead(&(cpu->bus), address);
+			cpu->PC++;
 			break;
 		}
 		
 		case 0xe1:{	//indirect,X
-			val = cpu->memMap[indirectXAddress(cpu)];
+			unsigned short address = indirectXAddress(cpu);
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 
 		case 0xf1:{
-			val = cpu->memMap[indirectYAddress(cpu)];
+			unsigned short address = indirectYAddress(cpu);
+			val = busRead(&(cpu->bus), address);
 			break;
 		}
 
@@ -1347,7 +1392,7 @@ void sbc(struct CPU *cpu){
 
 	zeroFlag(cpu, cpu->accumulator);
 	negativeFlag(cpu, cpu->accumulator);
-	cpu->programCounter += sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void sec(struct CPU *cpu){
@@ -1363,96 +1408,99 @@ void sei(struct CPU *cpu){
 }
 
 void sta(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x85:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			cpu->memMap[address] = cpu->accumulator;
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->accumulator);
 			break;
 		}
 
 		case 0x95:{	//zero page,X
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			cpu->memMap[address] = cpu->accumulator;
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, cpu->accumulator);
 			break;
 		}
 
 		case 0x8d:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			cpu->memMap[address] = cpu->accumulator;
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->accumulator);
+			cpu->PC++;
 			break;
 		}
 
 		case 0x9d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->x;
-			cpu->memMap[address] = cpu->accumulator;
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, cpu->accumulator);
+			cpu->PC++;
 			break;
 		}
 
 		case 0x99:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter) + cpu->y;
-			cpu->memMap[address] = cpu->accumulator;
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			busWrite(&(cpu->bus), address, cpu->accumulator);
+			cpu->PC++;
 			break;
 		}
 
 		case 0x81:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
-			cpu->memMap[address] = cpu->accumulator;
+			busWrite(&(cpu->bus), address, cpu->accumulator);
 			break;
 		}
 
 		case 0x91:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
-			cpu->memMap[address] = cpu->accumulator;
+			busWrite(&(cpu->bus), address, cpu->accumulator);
 			break;
 		}
 
 	}
-	cpu->programCounter += sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void stx(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x86:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			cpu->memMap[address] = cpu->x;
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->x);
 		}
 
 		case 0x96:{	//zero page,Y
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			cpu->memMap[address] = cpu->x;
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
+			busWrite(&(cpu->bus), address, cpu->x);
 		}
 
 		case 0x8e:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			cpu->memMap[address] = cpu->x;
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->x);
+			cpu->PC++;
 		}
 	}
-	cpu->programCounter += sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void sty(struct CPU *cpu){
-	switch(*(cpu->programCounter - sizeof(unsigned char))){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
 		case 0x84:{	//zero page
-			unsigned char address = *(cpu->programCounter);
-			cpu->memMap[address] = cpu->x;
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->y);
 		}
 
-		case 0x94:{	//zero page,Y
-			unsigned char address = *(cpu->programCounter) + cpu->x;
-			cpu->memMap[address] = cpu->x;
+		case 0x94:{	//zero page,X
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			busWrite(&(cpu->bus), address, cpu->y);
 		}
 
 		case 0x8c:{	//absolute
-			unsigned short address = absoluteAddress(cpu, cpu->programCounter);
-			cpu->memMap[address] = cpu->x;
-			cpu->programCounter += sizeof(unsigned char);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, cpu->y);
+			cpu->PC++;
 		}
 	}
-	cpu->programCounter += sizeof(unsigned char);
+	cpu->PC++;
 }
 
 void tax(struct CPU *cpu){
@@ -1501,15 +1549,15 @@ void tya(struct CPU *cpu){
 }
 
 void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
-	for(int i = 0; i < instructionsLen; i++){
-		(cpu->programCounter[i]) = instructions[i];
+	for(int i = cpu->PC; i < instructionsLen + cpu->PC; i++){
+		busWrite(&(cpu->bus), i, instructions[i - cpu->PC]);
 	}
 }
 
 void cpuLoop(struct CPU *cpu){
-	printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\ncpu->memMap[0xff] = %x and cpu->memMap[0x02] = %x\n", *(cpu->programCounter), cpu->programCounter - cpu->memMap, cpu->processorStatus, cpu->accumulator, cpu->memMap[0xff], cpu->memMap[0x02]);
-
-	switch(*(cpu->programCounter)){
+	printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\nval at 0xff = %x and val at 0x02 = %x\n", busRead(&(cpu->bus), cpu->PC), cpu->PC, cpu->processorStatus, cpu->accumulator, busRead(&(cpu->bus), 0xff), busRead(&(cpu->bus), 0x02));
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
+	switch(opCode){
 		case 0x69:
 		case 0x65:
 		case 0x75:
@@ -1518,7 +1566,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x79:
 		case 0x61:
 		case 0x71:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			adc(cpu);
 			break;
 		}
@@ -1531,7 +1579,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x39:			
 		case 0x21:			
 		case 0x31:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			and(cpu);
 			break;
 		}			
@@ -1541,92 +1589,92 @@ void cpuLoop(struct CPU *cpu){
 		case 0x16:
 		case 0x0e:
 		case 0x1e:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			asl(cpu);
 			break;
 		}
 
 		case 0x90:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			bcc(cpu);
 			break;	
 		}
 		
 		case 0xb0:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			bcs(cpu);
 			break;			
 		}
 
 		case 0xf0:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			beq(cpu);
 			break;
 		}		
 
 		case 0x24:
 		case 0x2c:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bit(cpu);
 			break;
 		}
 
 		case 0x30:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bmi(cpu);
 			break;
 		}
 
 		case 0xd0:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bne(cpu);
 			break;
 		}
 
 		case 0x10:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bpl(cpu);
 			break;
 		}
 
 		case 0x00:{
+			cpu->PC++;
 			cpu->processorStatus |= 0b00010000;
 			break;
 		}
-		//I didn't bother making a brk instruction that just kind of how the loop works
 
 		case 0x50:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bvc(cpu);
 			break;
 		}
 
 		case 0x70:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			bvs(cpu);
 			break;
 		}
 
 		case 0x18:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			clc(cpu);
 			break;
 		}
 
 		case 0xd8:{
-			cpu->programCounter += sizeof(unsigned char);
-			;cld(cpu);
+			cpu->PC++;
+			cld(cpu);
 			break;
 		}
 
 		case 0x58:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			cli(cpu);
 			break;
 		}
 
 		case 0xb8:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			clv(cpu);
 			break;
 		}
@@ -1639,7 +1687,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xd9:
 		case 0xc1:
 		case 0xd1:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			cmp(cpu);
 			break;
 		}
@@ -1647,7 +1695,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xe0:
 		case 0xe4:
 		case 0xec:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			cpx(cpu);
 			break;
 		}
@@ -1655,7 +1703,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xc0:
 		case 0xc4:
 		case 0xcc:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			cpy(cpu);
 			break;
 		}
@@ -1664,19 +1712,19 @@ void cpuLoop(struct CPU *cpu){
 		case 0xd6:
 		case 0xce:
 		case 0xde:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			dec(cpu);
 			break;
 		}
 
 		case 0xca:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			dex(cpu);
 			break;
 		}
 
 		case 0x88:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			dey(cpu);
 			break;
 		}
@@ -1689,7 +1737,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x59:
 		case 0x41:
 		case 0x51:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			eor(cpu);
 			break;
 		}
@@ -1698,20 +1746,20 @@ void cpuLoop(struct CPU *cpu){
 		case 0xf6:
 		case 0xee:
 		case 0xfe:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			inc(cpu);
 			break;
 		}
 
 		case 0xe8:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			inx(cpu);
 			break;
 
 		}
 
 		case 0xc8:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			iny(cpu);
 			break;
 
@@ -1719,14 +1767,14 @@ void cpuLoop(struct CPU *cpu){
 
 		case 0x4c:
 		case 0x6c:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			jmp(cpu);
 			break;
 
 		}
 
 		case 0x20:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			jsr(cpu);
 			break;
 		}
@@ -1739,7 +1787,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xb9:
 		case 0xa1:
 		case 0xb1:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			lda(cpu);
 			break;
 		}
@@ -1750,7 +1798,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xb6:
 		case 0xae:
 		case 0xbe:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			ldx(cpu);
 			break;
 		}
@@ -1760,7 +1808,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0xb4:
 		case 0xac:
 		case 0xbc:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			ldy(cpu);
 			break;
 		}
@@ -1770,13 +1818,13 @@ void cpuLoop(struct CPU *cpu){
 		case 0x56:
 		case 0x4e:
 		case 0x5e:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			lsr(cpu);
 			break;
 		}
 
 		case 0xea:{	//NOP instruction
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			break;
 		}
 
@@ -1788,32 +1836,32 @@ void cpuLoop(struct CPU *cpu){
 		case 0x19:
 		case 0x01:
 		case 0x11:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			ora(cpu);
 			break;
 		}
 
 		case 0x48:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			pha(cpu);
 			break;
 
 		}
 
 		case 0x08:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			php(cpu);
 			break;
 		}
 
 		case 0x68:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			pla(cpu);
 			break;
 		}
 
 		case 0x28:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			plp(cpu);
 			break;
 		}
@@ -1823,7 +1871,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x36:
 		case 0x2e:
 		case 0x3e:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			rol(cpu);
 			break;
 		}
@@ -1833,19 +1881,19 @@ void cpuLoop(struct CPU *cpu){
 		case 0x76:
 		case 0x6e:
 		case 0x7e:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			ror(cpu);
 			break;
 		}
 
 		case 0x40:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			rti(cpu);
 			break;
 		}
 
 		case 0x60:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			rts(cpu);
 			break;
 		}
@@ -1858,25 +1906,25 @@ void cpuLoop(struct CPU *cpu){
 		case 0xf9:
 		case 0xe1:
 		case 0xf1:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sbc(cpu);
 			break;
 		}
 
 		case 0x38:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sec(cpu);
 			break;
 		}
 
 		case 0xf8:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sed(cpu);
 			break;
 		}
 
 		case 0x78:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sei(cpu);
 			break;
 		}
@@ -1888,7 +1936,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x99:
 		case 0x81:
 		case 0x91:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sta(cpu);
 			break;
 		}
@@ -1896,7 +1944,7 @@ void cpuLoop(struct CPU *cpu){
 		case 0x86:
 		case 0x96:
 		case 0x8e:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			stx(cpu);
 			break;
 		}
@@ -1904,59 +1952,59 @@ void cpuLoop(struct CPU *cpu){
 		case 0x84:
 		case 0x94:
 		case 0x8c:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			sty(cpu);
 			break;
 		}
 
 		case 0xaa:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			tax(cpu);
 			break;
 		}
 		
 		case 0xa8:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			tay(cpu);
 			break;
 		}
 		
 		case 0xba:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			tsx(cpu);
 			break;
 		}
 
 		case 0x8a:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			txa(cpu);
 			break;
 		}
 
 		case 0x9a:{
-			cpu->programCounter += sizeof(unsigned char);
+			cpu->PC++;
 			txs(cpu);
 			break;
 		}
 
 		case 0x98:{
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
 			tya(cpu);
 			break;
 		}			
 
 		default:{
-			printf("%x instructions does not exist yet\n", *(cpu->programCounter));
-			cpu->programCounter = cpu->programCounter + sizeof(unsigned char);
+			cpu->PC++;
+			printf("%x instructions does not exist\n", busRead(&(cpu->bus), cpu->PC - 1));
 			break;
 		}
 	}
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
-	cpu->programCounter = &(cpu->memMap[0x600]);
-	
-	cpu->stackPointer = &(cpu->memMap[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
+	cpu->PC = 0x600;
+
+	cpu->stackPointer = &(cpu->bus.cpuRam[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
 
 	loadInstructions(cpu, instructions, instructionsLen);
 

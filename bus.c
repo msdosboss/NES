@@ -16,7 +16,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 }
 
-void memWrite(struct Bus *bus, unsigned short addr, unsigned char data){
+void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	if(addr >= 0x0 && addr < 0x2000){
 		addr &= 0b11111111111;
 		bus->cpuRam[addr] = data;
