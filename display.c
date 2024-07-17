@@ -224,7 +224,7 @@ int main(int argc, char* argv[]){
 
 	struct CPU cpu = {0};
 
-	initCPU(&cpu, rom.hexVals, rom.len);
+	initCPU(&cpu, rom.prgRom, rom.len);
 
 	printf("PC = %x\n", busRead(&(cpu.bus), cpu.PC));
 

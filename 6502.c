@@ -1998,7 +1998,7 @@ void cpuLoop(struct CPU *cpu){
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	cpu->PC = 0x600;
 
-	cpu->stackPointer = &(cpu->bus.cpuRam[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
+	cpu->stackPointer = &(cpu->bus.prgRam[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
 
 	loadInstructions(cpu, instructions, instructionsLen);
 
