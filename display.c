@@ -161,7 +161,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 		thrd_sleep(&req, NULL);
 	}
 	else{	
-		printf("CPU done\n");
+		//printf("CPU done\n");
 	}
 
 
@@ -220,11 +220,12 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	struct Rom rom = loadRom(argv[1]);
 
 	struct CPU cpu = {0};
+	
+	cpu.bus.rom = nesCartRead(argv[1]);
 
-	initCPU(&cpu, rom.prgRom, rom.len);
+	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
 
 	printf("PC = %x\n", busRead(&(cpu.bus), cpu.PC));
 

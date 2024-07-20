@@ -1458,18 +1458,22 @@ void stx(struct CPU *cpu){
 	switch(opCode){
 		case 0x86:{	//zero page
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			printf("address = %x\n", address);
 			busWrite(&(cpu->bus), address, cpu->x);
+			break;
 		}
 
 		case 0x96:{	//zero page,Y
 			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
 			busWrite(&(cpu->bus), address, cpu->x);
+			break;
 		}
 
 		case 0x8e:{	//absolute
 			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			busWrite(&(cpu->bus), address, cpu->x);
 			cpu->PC++;
+			break;
 		}
 	}
 	cpu->PC++;
@@ -1481,17 +1485,20 @@ void sty(struct CPU *cpu){
 		case 0x84:{	//zero page
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
 			busWrite(&(cpu->bus), address, cpu->y);
+			break;
 		}
 
 		case 0x94:{	//zero page,X
 			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
 			busWrite(&(cpu->bus), address, cpu->y);
+			break;
 		}
 
 		case 0x8c:{	//absolute
 			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			busWrite(&(cpu->bus), address, cpu->y);
 			cpu->PC++;
+			break;
 		}
 	}
 	cpu->PC++;
@@ -1996,11 +2003,11 @@ void cpuLoop(struct CPU *cpu){
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
-	cpu->PC = 0x600;
+	cpu->PC = 0x8000;
 
 	cpu->stackPointer = &(cpu->bus.prgRam[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
 
-	loadInstructions(cpu, instructions, instructionsLen);
+	//loadInstructions(cpu, instructions, instructionsLen);
 
 	cpu->processorStatus &= 0;
 }

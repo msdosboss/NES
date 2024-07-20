@@ -150,6 +150,7 @@ struct Rom nesCartRead(char *fileName){
 	rom.prgRom = malloc(sizeof(unsigned char) * prgRomSize);
 	rom.chrRom = malloc(sizeof(unsigned char) * chrRomSize);
 
+	rom.prgRomLen = prgRomSize;
 
 	int j = 0;
 	for(int i = prgRomStart; i < prgRomStart + prgRomSize; i++){
@@ -161,13 +162,14 @@ struct Rom nesCartRead(char *fileName){
 		rom.chrRom[j++] = raw[i];
 	}
 
-	for(int i = 0; i < prgRomSize; i++){
+	/*for(int i = 0; i < prgRomSize; i++){
 		printf("rom.prgRom[%d] = %x\n", i, rom.prgRom[i]);
-	}
-		
+	}*/
+
+	return rom;		
 }
 
-int main(){
+/*int main(){
 	//loadRom("snake.rom");
 	nesCartRead("nesTest.nes");
-}
+}*/

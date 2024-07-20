@@ -15,6 +15,7 @@
 struct Rom{
 	int len;
 	unsigned char *prgRom;
+	long prgRomLen;
 	unsigned char *chrRom;
 	unsigned char mapper;
 	int mirrorMode;
@@ -23,5 +24,9 @@ int instructionCount(char *str);
 unsigned char hexToChar(char *hexVal);
 struct Rom parse(char *str);
 struct Rom loadRom(char *fileName);
+int verifyFormat(unsigned char *raw);
+void mirrorMode(struct Rom *rom, unsigned char *raw);
+int trainerFlag(unsigned char *raw);
+struct Rom nesCartRead(char *fileName);
 
 #endif
