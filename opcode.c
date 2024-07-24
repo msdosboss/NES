@@ -245,9 +245,9 @@ void createOpArray(struct Opcode *opcodes){
 
 }
 
-int main(){
+/*int main(){
 	struct Opcode opcodes[0x100];
 	createOpArray(opcodes);
 	printf("%s\n", opcodes[0xba].name);
 	return 0;
-}
+}*/
