@@ -9,6 +9,7 @@
 #include <threads.h>
 #include "6502.h"
 #include "fileio.h"
+#include "log.h"
 #define COLLUMNS 32
 #define ROWS 32
 #define WIDTH 640
@@ -155,6 +156,13 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	if((cpu->processorStatus & 0b00010000) == 0){
 		loadBuffer(cpu, buffer);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
+		char *str = malloc(sizeof(char) * 93);
+		struct Opcode opcodes[0x100];
+		createOpArray(opcodes);
+		cycleLog(*cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
+		printf("%s\n", str);
+		unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
+
 		cpuLoop(cpu);
 		bufferFlag = checkBuffer(cpu, buffer);
 		struct timespec req = {0, 50000L};
