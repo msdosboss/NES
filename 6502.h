@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "bus.h"
+#include "log.h"
+#include "opcode.h"
 
 struct CPU {
 	unsigned short PC;

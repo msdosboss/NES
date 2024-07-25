@@ -111,10 +111,12 @@ void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
 		}
 		case INDIRECTX:{
 			sprintf(&(str[i]), "(%02x,X) @ %02x = %04x = %02x", busRead(&(cpu.bus), cpu.PC + 1), busRead(&(cpu.bus), cpu.PC + 1) + cpu.x, indirectXAddress(cpu.PC + 1), busRead(&(cpu.bus), indirectXAddress(cpu.PC + 1)));
+			i += 24;
 			break;
 		}
 		case INDIRECTY:{
-			sprintf(&(str[i]), "(%02x),Y @ %02x = %04x = %02x", busRead(&(cpu.bus), cpu.PC + 1), busRead(&(cpu.bus), cpu.PC + 1) + cpu.y, indirectYAddress(cpu.PC + 1), busRead(&(cpu.bus), indirectYAddress(cpu.PC + 1)));
+			sprintf(&(str[i]), "(%02x),Y = %04x @ %04x = %02x", busRead(&(cpu.bus), cpu.PC + 1), absoluteAddress(&cpu, busRead(&(cpu.bus), cpu.PC + 1)), indirectYAddress(cpu.PC + 1), busRead(&(cpu.bus), indirectYAddress(cpu.PC + 1)));
+			i += 24;
 			break;
 		}
 	}
@@ -124,7 +126,7 @@ void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
 int main(){
 	char *str = malloc(sizeof(char) * 93);
 	struct CPU cpu = {0};
-	cpu.PC = 0xc5f7;
+	cpu.PC = 0xd922;
 	struct Opcode opcodes[0x100];
 	createOpArray(opcodes);
 	cpu.bus.rom = nesCartRead("nesTest.nes");
