@@ -123,7 +123,7 @@ void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
 	
 }
 
-int main(){
+/*int main(){
 	char *str = malloc(sizeof(char) * 93);
 	struct CPU cpu = {0};
 	cpu.PC = 0xd922;
@@ -135,4 +135,4 @@ int main(){
 	printf("%s", str);
 
 	return 0;
-}
+}*/
