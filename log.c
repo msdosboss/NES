@@ -7,11 +7,11 @@ char upper(char lower){
 	return lower;
 }
 
-void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
+void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 	//char *str = malloc(sizeof(char) * 93);
 	int i = 0;
 
-	sprintf(str, "%04x", cpu.PC);
+	sprintf(str, "%04x", cpu->PC);
 
 	i += 4;
 	
@@ -24,7 +24,7 @@ void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
 
 	for(int j = 0; j < 3; j++){
 		if(opcode.len >= j + 1){
-				sprintf(&(str[i]), "%02x ", busRead(&(cpu.bus), cpu.PC + j));
+				sprintf(&(str[i]), "%02x ", busRead(&(cpu->bus), cpu->PC + j));
 			for(int jj = 0; jj < 2; jj++){
 				str[jj + i] = upper(str[jj + i]);
 			}
@@ -45,82 +45,132 @@ void cycleLog(struct CPU cpu, struct Opcode opcode, char *str){
 	str[i++] = ' ';
 
 	switch(opcode.addressingMode){
+		case NONEADDRESSING:{
+			for(int j = i; j < i + 24; j++){
+				str[j] = ' ';
+			}
+			i += 24;
+			break;
+		}
+
 		case IMMEDIATE:{
 			str[i++] = '#';
 			str[i++] = '$';
-			sprintf(&(str[i]), "%02x", busRead(&(cpu.bus), cpu.PC + 1));
+			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), cpu->PC + 1));
 			i += 2;
+			for(int j = i; j < i + 20; j++){
+				str[j] = ' ';
+			}
+			i += 20;
 			break;
 			
 		}
 
 		case ZEROPAGE:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%02x", busRead(&(cpu.bus), cpu.PC + 1));
+			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), cpu->PC + 1));
 			i += 2;
 			sprintf(&(str[i]), " = ");
 			i += 3;
-			sprintf(&(str[i]), "%02x", busRead(&(cpu.bus), busRead(&(cpu.bus), cpu.PC + 1)));
+			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1)));
 			i += 2;
+			for(int j = i; j < i + 14; j++){
+				str[j] = ' ';
+			}
+			i += 14;
 			break;
 		}
 
 		case ZEROPAGEX:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%02x,X", busRead(&(cpu.bus), cpu.PC + 1) + cpu.x);
+			sprintf(&(str[i]), "%02x,X", busRead(&(cpu->bus), cpu->PC + 1) + cpu->x);
 			i += 4;
 			sprintf(&(str[i]), " = ");
 			i += 3;
-			sprintf(&(str[i]), "%02x", busRead(&(cpu.bus), busRead(&(cpu.bus), cpu.PC + 1) + cpu.x));
+			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->x));
 			i += 2;
+			for(int j = i; j < i + 14; j++){
+				str[j] = ' ';
+			}
+			i += 14;
 			break;
 		}
 		case ZEROPAGEY:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%02x,Y", busRead(&(cpu.bus), cpu.PC + 1) + cpu.y);
+			sprintf(&(str[i]), "%02x,Y", busRead(&(cpu->bus), cpu->PC + 1) + cpu->y);
 			i += 4;
 			sprintf(&(str[i]), " = ");
 			i += 3;
-			sprintf(&(str[i]), "%02x", busRead(&(cpu.bus), busRead(&(cpu.bus), cpu.PC + 1) + cpu.y));
+			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->y));
 			i += 2;
+			for(int j = i; j < i + 14; j++){
+				str[j] = ' ';
+			}
+			i += 14;
 			break;
 		}
 		case ABSOLUTE:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x", absoluteAddress(&cpu, cpu.PC + 1));
+			sprintf(&(str[i]), "%04x", absoluteAddress(cpu, cpu->PC + 1));
 			for(int j = 0; j < 4; j++){
 				str[i + j] = upper(str[i + j]);
 			}
+			i += 4;
+			for(int j = i; j < i + 19; j++){
+				str[j] = ' ';
+			}
+			i += 19;
 			break;
 		}
 		case ABSOLUTEX:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x", absoluteAddress(&cpu, cpu.PC + 1) + cpu.x);
+			sprintf(&(str[i]), "%04x", absoluteAddress(cpu, cpu->PC + 1) + cpu->x);
 			for(int j = 0; j < 4; j++){
 				str[i + j] = upper(str[i + j]);
 			}
+			i += 4;
+			for(int j = i; j < i + 19; j++){
+				str[j] = ' ';
+			}
+			i += 19;
 			break;
 		}
 		case ABSOLUTEY:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x", absoluteAddress(&cpu, cpu.PC + 1) + cpu.y);
+			sprintf(&(str[i]), "%04x", absoluteAddress(cpu, cpu->PC + 1) + cpu->y);
 			for(int j = 0; j < 4; j++){
 				str[i + j] = upper(str[i + j]);
 			}
+			i += 4;
+			for(int j = i; j < i + 19; j++){
+				str[j] = ' ';
+			}
+			i += 19;
 			break;
 		}
 		case INDIRECTX:{
-			sprintf(&(str[i]), "(%02x,X) @ %02x = %04x = %02x", busRead(&(cpu.bus), cpu.PC + 1), busRead(&(cpu.bus), cpu.PC + 1) + cpu.x, indirectXAddress(cpu.PC + 1), busRead(&(cpu.bus), indirectXAddress(cpu.PC + 1)));
-			i += 24;
+			cpu->PC++;
+			sprintf(&(str[i]), "(%02x,X) @ %02x = %04x = %02x", busRead(&(cpu->bus), cpu->PC), busRead(&(cpu->bus), cpu->PC) + cpu->x, indirectXAddress(cpu), busRead(&(cpu->bus), indirectXAddress(cpu)));
+			i += 17;
+			for(int j = i; j < i + 7; j++){
+				str[j] = ' ';
+			}
+			i += 7;
 			break;
 		}
 		case INDIRECTY:{
-			sprintf(&(str[i]), "(%02x),Y = %04x @ %04x = %02x", busRead(&(cpu.bus), cpu.PC + 1), absoluteAddress(&cpu, busRead(&(cpu.bus), cpu.PC + 1)), indirectYAddress(cpu.PC + 1), busRead(&(cpu.bus), indirectYAddress(cpu.PC + 1)));
-			i += 24;
+			cpu->PC++;
+			sprintf(&(str[i]), "(%02x),Y = %04x @ %04x = %02x", busRead(&(cpu->bus), cpu->PC), absoluteAddress(cpu, busRead(&(cpu->bus), cpu->PC)), indirectYAddress(cpu), busRead(&(cpu->bus), indirectYAddress(cpu)));
+			i += 17;
+			for(int j = i; j < i + 7; j++){
+				str[j] = ' ';
+			}
+			i += 7;
 			break;
 		}
 	}
-	
+	sprintf(&(str[i]), "A:%02x X:%02x Y:%02x P:%02x SP:%02x", cpu->accumulator, cpu->x, cpu->y, cpu->processorStatus, (cpu->stackPointer - cpu->bus.prgRam) - 0x100);
+	printf("i = %d\n", i);
 }
 
 /*int main(){

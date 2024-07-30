@@ -159,7 +159,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 		char *str = malloc(sizeof(char) * 93);
 		struct Opcode opcodes[0x100];
 		createOpArray(opcodes);
-		cycleLog(*cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
+		cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
 		printf("%s\n", str);
 		unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
 

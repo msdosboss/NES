@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void cycleLog(struct CPU cpu, struct Opcode opcode, char *str);
+void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str);
 char upper(char lower);
 #endif
 
