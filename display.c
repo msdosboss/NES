@@ -235,8 +235,6 @@ int main(int argc, char* argv[]){
 
 	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
 
-	printf("PC = %x\n", busRead(&(cpu.bus), cpu.PC));
-
 	SDL_Window *wind = initDisplay();
 
 	SDL_Renderer *rend = initRender(wind);

@@ -1458,7 +1458,6 @@ void stx(struct CPU *cpu){
 	switch(opCode){
 		case 0x86:{	//zero page
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
-			printf("address = %x\n", address);
 			busWrite(&(cpu->bus), address, cpu->x);
 			break;
 		}
@@ -2005,12 +2004,11 @@ void cpuLoop(struct CPU *cpu){
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	cpu->PC = 0xc000;
 
-	cpu->stackPointer = &(cpu->bus.prgRam[0x1ff]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down
-
+	cpu->stackPointer = &(cpu->bus.prgRam[0x1fd]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down. I guess it starts at fd becuase that what it is in nesTest.log
 
 	//loadInstructions(cpu, instructions, instructionsLen);
 
-	cpu->processorStatus &= 0;
+	cpu->processorStatus = 0x24;
 }
 
 /*

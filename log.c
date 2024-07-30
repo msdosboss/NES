@@ -46,10 +46,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 
 	switch(opcode.addressingMode){
 		case NONEADDRESSING:{
-			for(int j = i; j < i + 24; j++){
+			for(int j = i; j < i + 28; j++){
 				str[j] = ' ';
 			}
-			i += 24;
+			i += 28;
 			break;
 		}
 
@@ -58,10 +58,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			str[i++] = '$';
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), cpu->PC + 1));
 			i += 2;
-			for(int j = i; j < i + 20; j++){
+			for(int j = i; j < i + 24; j++){
 				str[j] = ' ';
 			}
-			i += 20;
+			i += 24;
 			break;
 			
 		}
@@ -74,10 +74,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1)));
 			i += 2;
-			for(int j = i; j < i + 14; j++){
+			for(int j = i; j < i + 20; j++){
 				str[j] = ' ';
 			}
-			i += 14;
+			i += 20;
 			break;
 		}
 
@@ -89,10 +89,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->x));
 			i += 2;
-			for(int j = i; j < i + 14; j++){
+			for(int j = i; j < i + 18; j++){
 				str[j] = ' ';
 			}
-			i += 14;
+			i += 18;
 			break;
 		}
 		case ZEROPAGEY:{
@@ -103,10 +103,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->y));
 			i += 2;
-			for(int j = i; j < i + 14; j++){
+			for(int j = i; j < i + 18; j++){
 				str[j] = ' ';
 			}
-			i += 14;
+			i += 18;
 			break;
 		}
 		case ABSOLUTE:{
@@ -116,10 +116,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				str[i + j] = upper(str[i + j]);
 			}
 			i += 4;
-			for(int j = i; j < i + 19; j++){
+			for(int j = i; j < i + 23; j++){
 				str[j] = ' ';
 			}
-			i += 19;
+			i += 23;
 			break;
 		}
 		case ABSOLUTEX:{
@@ -129,10 +129,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				str[i + j] = upper(str[i + j]);
 			}
 			i += 4;
-			for(int j = i; j < i + 19; j++){
+			for(int j = i; j < i + 23; j++){
 				str[j] = ' ';
 			}
-			i += 19;
+			i += 23;
 			break;
 		}
 		case ABSOLUTEY:{
@@ -142,10 +142,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				str[i + j] = upper(str[i + j]);
 			}
 			i += 4;
-			for(int j = i; j < i + 19; j++){
+			for(int j = i; j < i + 23; j++){
 				str[j] = ' ';
 			}
-			i += 19;
+			i += 23;
 			break;
 		}
 		case INDIRECTX:{
@@ -170,7 +170,7 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 		}
 	}
 	sprintf(&(str[i]), "A:%02x X:%02x Y:%02x P:%02x SP:%02x", cpu->accumulator, cpu->x, cpu->y, cpu->processorStatus, (cpu->stackPointer - cpu->bus.prgRam) - 0x100);
-	printf("i = %d\n", i);
+	//printf("i = %d\n", i);
 }
 
 /*int main(){
