@@ -88,9 +88,9 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0xec] = initOpcode(0xec, "CPX", 3, 4, ABSOLUTE);
 
 	//CPY	
-	opcodes[0xc0] = initOpcode(0xc0, "CPX", 2, 2, IMMEDIATE);
-	opcodes[0xc4] = initOpcode(0xc4, "CPX", 2, 3, ZEROPAGE);
-	opcodes[0xcc] = initOpcode(0xcc, "CPX", 3, 4, ABSOLUTE);
+	opcodes[0xc0] = initOpcode(0xc0, "CPY", 2, 2, IMMEDIATE);
+	opcodes[0xc4] = initOpcode(0xc4, "CPY", 2, 3, ZEROPAGE);
+	opcodes[0xcc] = initOpcode(0xcc, "CPY", 3, 4, ABSOLUTE);
 
 	//DEC
 	opcodes[0xc6] = initOpcode(0xc6, "DEC", 2, 5, ZEROPAGE);

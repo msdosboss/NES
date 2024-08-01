@@ -323,7 +323,7 @@ void bit(struct CPU *cpu){
 }
 
 void bmi(struct CPU *cpu){
-	if((cpu->processorStatus & 0b10000000) == 0){
+	if((cpu->processorStatus & 0b10000000) != 0){
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -595,7 +595,7 @@ void cpy(struct CPU *cpu){
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	switch(opCode){
 		case 0xc0:{	//immediate
-			result = cpu->x - busRead(&(cpu->bus), cpu->PC);
+			result = cpu->y - busRead(&(cpu->bus), cpu->PC);
 			if(cpu->y >= busRead(&(cpu->bus), cpu->PC)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
 			}
@@ -1170,7 +1170,7 @@ void pla(struct CPU *cpu){
 }
 
 void plp(struct CPU *cpu){
-	cpu->processorStatus = (pop(cpu) & 0b11101111);
+	cpu->processorStatus = ((pop(cpu) & 0b11101111) | 0b00100000);
 }
 
 void rol(struct CPU *cpu){
@@ -1528,16 +1528,16 @@ void txa(struct CPU *cpu){
 }
 
 void tsx(struct CPU *cpu){
-	cpu->accumulator = *(cpu->stackPointer);
+	cpu->x = (cpu->stackPointer - cpu->bus.prgRam) - 0x100;
 
-	zeroFlag(cpu, cpu->accumulator);
+	zeroFlag(cpu, cpu->x);
 	
-	negativeFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->x);
 	
 }
 
 void txs(struct CPU *cpu){
-	*cpu->stackPointer = cpu->x;
+	cpu->stackPointer = cpu->x + &(cpu->bus.prgRam[0x100]);
 }
 
 void tya(struct CPU *cpu){

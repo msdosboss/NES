@@ -122,16 +122,30 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			break;
 		}
 		case ABSOLUTE:{
-			str[i++] = '$';
-			sprintf(&(str[i]), "%04x", absoluteAddress(cpu, cpu->PC + 1));
-			for(int j = 0; j < 4; j++){
-				str[i + j] = upper(str[i + j]);
+			if(opcode.code == 0x4c || opcode.code == 0x20){	//JMP or JSR
+				str[i++] = '$';
+				sprintf(&(str[i]), "%04x", absoluteAddress(cpu, cpu->PC + 1));
+				for(int j = 0; j < 4; j++){
+					str[i + j] = upper(str[i + j]);
+				}
+				i += 4;
+				for(int j = i; j < i + 23; j++){
+					str[j] = ' ';
+				}
+				i += 23;
 			}
-			i += 4;
-			for(int j = i; j < i + 23; j++){
-				str[j] = ' ';
+			else{
+				str[i++] = '$';
+				sprintf(&(str[i]), "%04x = %02x", absoluteAddress(cpu, cpu->PC + 1), busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1)));
+				for(int j = 0; j < 9; j++){
+					str[i + j] = upper(str[i + j]);
+				}
+				i += 9;
+				for(int j = i; j < i + 18; j++){
+					str[j] = ' ';
+				}
+				i += 18;
 			}
-			i += 23;
 			break;
 		}
 		case ABSOLUTEX:{
@@ -183,9 +197,6 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			break;
 		}
 		case RELATIVE:{
-			//struct CPU orcaCpu = *cpu;
-			//cpuLoop(&orcaCpu);
-			//sprintf(&(str[i]), "$%04x", orcaCpu.PC);
 			sprintf(&(str[i]), "$%04x", cpu->PC + 2 + (char)busRead(&(cpu->bus), cpu->PC + 1));
 			for(int j = i; j < i + 5; j++){
 				str[j] = upper(str[j]);
