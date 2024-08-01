@@ -1158,7 +1158,7 @@ void pha(struct CPU *cpu){
 }
 
 void php(struct CPU *cpu){
-	push(cpu, cpu->processorStatus);
+	push(cpu, (cpu->processorStatus | 0b00010000));	//break bit is supposed to be on when pushed
 }
 
 void pla(struct CPU *cpu){
@@ -1170,7 +1170,7 @@ void pla(struct CPU *cpu){
 }
 
 void plp(struct CPU *cpu){
-	cpu->processorStatus = pop(cpu);
+	cpu->processorStatus = (pop(cpu) & 0b11101111);
 }
 
 void rol(struct CPU *cpu){

@@ -12,6 +12,7 @@
 #define ABSOLUTEY 7
 #define INDIRECTX 8
 #define INDIRECTY 9
+#define RELATIVE 10
 #define NONEADDRESSING 0
 
 struct Opcode{

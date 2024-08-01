@@ -57,6 +57,9 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			str[i++] = '#';
 			str[i++] = '$';
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), cpu->PC + 1));
+			for(int j = i;  j < i + 2; j++){
+				str[j] = upper(str[j]);
+			}
 			i += 2;
 			for(int j = i; j < i + 24; j++){
 				str[j] = ' ';
@@ -74,6 +77,9 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1)));
 			i += 2;
+			for(int j = i - 7; i > j; j++){
+				str[j] = upper(str[j]);
+			}
 			for(int j = i; j < i + 20; j++){
 				str[j] = ' ';
 			}
@@ -89,6 +95,9 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->x));
 			i += 2;
+			for(int j = i - 9; i > j; j++){
+				str[j] = upper(str[j]);
+			}
 			for(int j = i; j < i + 18; j++){
 				str[j] = ' ';
 			}
@@ -103,6 +112,9 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 3;
 			sprintf(&(str[i]), "%02x", busRead(&(cpu->bus), busRead(&(cpu->bus), cpu->PC + 1) + cpu->y));
 			i += 2;
+			for(int j = i - 9; i > j; j++){
+				str[j] = upper(str[j]);
+			}
 			for(int j = i; j < i + 18; j++){
 				str[j] = ' ';
 			}
@@ -156,6 +168,7 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				str[j] = ' ';
 			}
 			i += 7;
+			cpu->PC--;
 			break;
 		}
 		case INDIRECTY:{
@@ -166,10 +179,28 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				str[j] = ' ';
 			}
 			i += 7;
+			cpu->PC--;
 			break;
+		}
+		case RELATIVE:{
+			//struct CPU orcaCpu = *cpu;
+			//cpuLoop(&orcaCpu);
+			//sprintf(&(str[i]), "$%04x", orcaCpu.PC);
+			sprintf(&(str[i]), "$%04x", cpu->PC + 2 + (char)busRead(&(cpu->bus), cpu->PC + 1));
+			for(int j = i; j < i + 5; j++){
+				str[j] = upper(str[j]);
+			}
+			i += 5;
+			for(int j = i; j < i + 23; j++){
+				str[j] = ' ';
+			}
+			i += 23;
 		}
 	}
 	sprintf(&(str[i]), "A:%02x X:%02x Y:%02x P:%02x SP:%02x", cpu->accumulator, cpu->x, cpu->y, cpu->processorStatus, (cpu->stackPointer - cpu->bus.prgRam) - 0x100);
+	for(int j = i; j < i + 25; j++){
+		str[j] = upper(str[j]);
+	}
 	//printf("i = %d\n", i);
 }
 

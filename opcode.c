@@ -50,14 +50,14 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0x1e] = initOpcode(0x1e, "ASL", 3, 7, ABSOLUTEX);
 
 	//Branch instructions
-	opcodes[0x90] = initOpcode(0x90, "BCC", 2, 2, NONEADDRESSING);
-	opcodes[0xb0] = initOpcode(0xb0, "BCS", 2, 2, NONEADDRESSING);
-	opcodes[0xf0] = initOpcode(0xf0, "BEQ", 2, 2, NONEADDRESSING);
-	opcodes[0x30] = initOpcode(0x30, "BMI", 2, 2, NONEADDRESSING);
-	opcodes[0xd0] = initOpcode(0xd0, "BNE", 2, 2, NONEADDRESSING);
-	opcodes[0x10] = initOpcode(0x10, "BPL", 2, 2, NONEADDRESSING);
-	opcodes[0x50] = initOpcode(0x50, "BVC", 2, 2, NONEADDRESSING);
-	opcodes[0x70] = initOpcode(0x70, "BVS", 2, 2, NONEADDRESSING);
+	opcodes[0x90] = initOpcode(0x90, "BCC", 2, 2, RELATIVE);
+	opcodes[0xb0] = initOpcode(0xb0, "BCS", 2, 2, RELATIVE);
+	opcodes[0xf0] = initOpcode(0xf0, "BEQ", 2, 2, RELATIVE);
+	opcodes[0x30] = initOpcode(0x30, "BMI", 2, 2, RELATIVE);
+	opcodes[0xd0] = initOpcode(0xd0, "BNE", 2, 2, RELATIVE);
+	opcodes[0x10] = initOpcode(0x10, "BPL", 2, 2, RELATIVE);
+	opcodes[0x50] = initOpcode(0x50, "BVC", 2, 2, RELATIVE);
+	opcodes[0x70] = initOpcode(0x70, "BVS", 2, 2, RELATIVE);
 
 	//BIT
 	opcodes[0x24] = initOpcode(0x24, "BIT", 2, 3, ZEROPAGE);
