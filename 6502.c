@@ -50,15 +50,25 @@ unsigned short absoluteAddress(struct CPU *cpu, unsigned short startingPoint){	/
 	return address;
 }
 
+unsigned short rollOverAbsoluteAddress(struct CPU *cpu, unsigned char startingPoint){
+	startingPoint++;
+	unsigned short address = busRead(&(cpu->bus), startingPoint);	//putting the 2 arg byte in front because this is little eddien 
+	startingPoint--;
+	address = address << 8;	//making room for the first arg
+	address = address | busRead(&(cpu->bus), startingPoint);	//this line assumes that the bits being shifted in are all zero. I dont know this to be the case
+	return address;
+
+}
+
 unsigned short indirectXAddress(struct CPU *cpu){
 	unsigned char indirectAddress = busRead(&(cpu->bus), cpu->PC);
 	indirectAddress = indirectAddress + cpu->x;
-	return absoluteAddress(cpu, indirectAddress);
+	return rollOverAbsoluteAddress(cpu, indirectAddress);
 }
 
 unsigned short indirectYAddress(struct CPU *cpu){
 	unsigned char indirectAddress = busRead(&(cpu->bus), cpu->PC);
-	return absoluteAddress(cpu, indirectAddress) + cpu->y;
+	return rollOverAbsoluteAddress(cpu, indirectAddress) + cpu->y;
 }
 
 unsigned short indirectAddress(struct CPU *cpu){
@@ -67,19 +77,19 @@ unsigned short indirectAddress(struct CPU *cpu){
 }
 
 void push(struct CPU *cpu, unsigned char val){
-	cpu->stackPointer = cpu->stackPointer - sizeof(unsigned char);
 	*cpu->stackPointer = val;
+	cpu->stackPointer = cpu->stackPointer - sizeof(unsigned char);
 }
 
 unsigned char pop(struct CPU *cpu){
 	cpu->stackPointer = cpu->stackPointer + sizeof(unsigned char);
-	return *(cpu->stackPointer - sizeof(unsigned char));
+	return *(cpu->stackPointer);
 }
 
 unsigned short popAbsoluteAddress(struct CPU *cpu){
 	unsigned short address = 0;
-	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
 	address |= pop(cpu);
+	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
 	return address;
 }
 
@@ -844,10 +854,10 @@ void jmp(struct CPU *cpu){
 
 void jsr(struct CPU *cpu){
 	unsigned short index = cpu->PC + 1;	//I really dont know why the + 1 is here but it works so yeah...
-	//unsigned short index = cpu->programCounter - (cpu->memMap + 1);
-	push(cpu, (unsigned char)(index));	//pushes the first 8 bits of the address to stack
+	unsigned short orcaIndex = index;
 	index = index >> 8;
 	push(cpu, (unsigned char)(index));
+	push(cpu, (unsigned char)(orcaIndex));	//pushes the first 8 bits of the address to stack
 	unsigned short address = absoluteAddress(cpu, cpu->PC);
 	cpu->PC = address;
 }
@@ -1245,7 +1255,7 @@ void ror(struct CPU *cpu){
 			preShiftVal = cpu->accumulator;
 			cpu->accumulator >>= 1;
 			cpu->accumulator |= (cpu->processorStatus << 7);	//accumulator should be being ored by 0bX0000000 with the x being the first bit (carry bit) from processorStatus
-			carryFlag(cpu, preShiftVal);	//storing the 7th bit of the accumulator in carry flag from before the accumulator was shifted
+			carryFlag(cpu, preShiftVal << 7);	//storing the 0th bit of the accumulator in carry flag from before the accumulator was shifted
 			zeroFlag(cpu, cpu->accumulator);
 			negativeFlag(cpu, cpu->accumulator);
 			break;
@@ -1256,7 +1266,7 @@ void ror(struct CPU *cpu){
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
-			carryFlag(cpu, preShiftVal);
+			carryFlag(cpu, preShiftVal << 7);
 			zeroFlag(cpu, busRead(&(cpu->bus), address));
 			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			cpu->PC++;
@@ -1268,7 +1278,7 @@ void ror(struct CPU *cpu){
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
-			carryFlag(cpu, preShiftVal);
+			carryFlag(cpu, preShiftVal << 7);
 			zeroFlag(cpu, busRead(&(cpu->bus), address));
 			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			cpu->PC++;
@@ -1280,7 +1290,7 @@ void ror(struct CPU *cpu){
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
-			carryFlag(cpu, preShiftVal);
+			carryFlag(cpu, preShiftVal << 7);
 			zeroFlag(cpu, busRead(&(cpu->bus), address));
 			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			cpu->PC += 2;
@@ -1292,7 +1302,7 @@ void ror(struct CPU *cpu){
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
-			carryFlag(cpu, preShiftVal);
+			carryFlag(cpu, preShiftVal << 7);
 			zeroFlag(cpu, busRead(&(cpu->bus), address));
 			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			cpu->PC += 2;
@@ -1302,7 +1312,7 @@ void ror(struct CPU *cpu){
 }
 
 void rti(struct CPU *cpu){
-	cpu->processorStatus = pop(cpu);
+	cpu->processorStatus = ((pop(cpu) & 0b11101111) | 0b00100000);
 	cpu->PC = popAbsoluteAddress(cpu);
 }
 

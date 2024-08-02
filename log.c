@@ -46,10 +46,19 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 
 	switch(opcode.addressingMode){
 		case NONEADDRESSING:{
-			for(int j = i; j < i + 28; j++){
-				str[j] = ' ';
+			if(opcode.code == 0x4a || opcode.code == 0x6a || opcode.code == 0x2a || opcode.code == 0x0a){
+				str[i++] = 'A';
+				for(int j = i; j < i + 27; j++){
+					str[j] = ' ';
+				}
+				i += 27;
 			}
-			i += 28;
+			else{
+				for(int j = i; j < i + 28; j++){
+					str[j] = ' ';
+				}
+				i += 28;
+			}
 			break;
 		}
 
@@ -176,23 +185,29 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 		}
 		case INDIRECTX:{
 			cpu->PC++;
-			sprintf(&(str[i]), "(%02x,X) @ %02x = %04x = %02x", busRead(&(cpu->bus), cpu->PC), busRead(&(cpu->bus), cpu->PC) + cpu->x, indirectXAddress(cpu), busRead(&(cpu->bus), indirectXAddress(cpu)));
-			i += 17;
-			for(int j = i; j < i + 7; j++){
+			sprintf(&(str[i]), "($%02x,X) @ %02x = %04x = %02x", busRead(&(cpu->bus), cpu->PC), ((busRead(&(cpu->bus), cpu->PC) + cpu->x) & 0b11111111), indirectXAddress(cpu), busRead(&(cpu->bus), indirectXAddress(cpu)));
+			for(int j = i; j < i + 24; j++){
+				str[j] = upper(str[j]);
+			}
+			i += 24;
+			for(int j = i; j < i + 4; j++){
 				str[j] = ' ';
 			}
-			i += 7;
+			i += 4;
 			cpu->PC--;
 			break;
 		}
 		case INDIRECTY:{
 			cpu->PC++;
-			sprintf(&(str[i]), "(%02x),Y = %04x @ %04x = %02x", busRead(&(cpu->bus), cpu->PC), absoluteAddress(cpu, busRead(&(cpu->bus), cpu->PC)), indirectYAddress(cpu), busRead(&(cpu->bus), indirectYAddress(cpu)));
-			i += 17;
-			for(int j = i; j < i + 7; j++){
+			sprintf(&(str[i]), "($%02x),Y = %04x @ %04x = %02x", busRead(&(cpu->bus), cpu->PC), absoluteAddress(cpu, busRead(&(cpu->bus), cpu->PC)), indirectYAddress(cpu), busRead(&(cpu->bus), indirectYAddress(cpu)));
+			for(int j = i; j < i + 26; j++){
+				str[j] = upper(str[j]);
+			}
+			i += 26; 
+			for(int j = i; j < i + 1; j++){
 				str[j] = ' ';
 			}
-			i += 7;
+			i += 1;
 			cpu->PC--;
 			break;
 		}

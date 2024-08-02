@@ -43,7 +43,7 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0x31] = initOpcode(0x31, "AND", 2, 5, INDIRECTY);
 
 	//ASL
-	opcodes[0x0a] = initOpcode(0x0a, "ASL", 2, 2, NONEADDRESSING);
+	opcodes[0x0a] = initOpcode(0x0a, "ASL", 1, 2, NONEADDRESSING);
 	opcodes[0x06] = initOpcode(0x06, "ASL", 2, 5, ZEROPAGE);
 	opcodes[0x16] = initOpcode(0x16, "ASL", 2, 6, ZEROPAGEX);
 	opcodes[0x0e] = initOpcode(0x0e, "ASL", 3, 6, ABSOLUTE);
