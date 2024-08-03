@@ -73,7 +73,12 @@ unsigned short indirectYAddress(struct CPU *cpu){
 
 unsigned short indirectAddress(struct CPU *cpu){
 	unsigned short indirectAddress = absoluteAddress(cpu, cpu->PC);
-	return absoluteAddress(cpu, indirectAddress);
+	unsigned char firstByte = (indirectAddress & 0b11111111);
+	firstByte++;
+	unsigned short address = busRead(&(cpu->bus), ((indirectAddress & 0b1111111100000000) | firstByte));	//this is the only thing that makes it different from just running absoluteAddress(cpu, indirectAddress)
+	address = address << 8;
+	address = address | busRead(&(cpu->bus), indirectAddress);
+	return address;
 }
 
 void push(struct CPU *cpu, unsigned char val){
@@ -1222,7 +1227,7 @@ void rol(struct CPU *cpu){
 		}
 
 		case 0x2e:{	//absolute
-			unsigned char address = absoluteAddress(cpu, cpu->PC);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal << 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
@@ -1234,7 +1239,7 @@ void rol(struct CPU *cpu){
 		}
 
 		case 0x3e:{	//absolute,X
-			unsigned char address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal << 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));

@@ -146,7 +146,7 @@ void createOpArray(struct Opcode *opcodes){
 	//LDX
 	opcodes[0xa2] = initOpcode(0xa2, "LDX", 2, 2, IMMEDIATE);
 	opcodes[0xa6] = initOpcode(0xa6, "LDX", 2, 3, ZEROPAGE);
-	opcodes[0xb6] = initOpcode(0xb6, "LDX", 2, 4, ZEROPAGEX);
+	opcodes[0xb6] = initOpcode(0xb6, "LDX", 2, 4, ZEROPAGEY);
 	opcodes[0xae] = initOpcode(0xae, "LDX", 3, 4, ABSOLUTE);
 	opcodes[0xbe] = initOpcode(0xbe, "LDX", 3, 4, ABSOLUTEY);
 

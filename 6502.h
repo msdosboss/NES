@@ -27,6 +27,7 @@ unsigned short absoluteAddress(struct CPU *cpu, unsigned short startingPoint);
 unsigned short rollOverAbsoluteAddress(struct CPU *cpu, unsigned char startingPoint);
 unsigned short indirectYAddress(struct CPU *cpu);
 unsigned short indirectXAddress(struct CPU *cpu);
+unsigned short indirectAddress(struct CPU *cpu);
 void push(struct CPU *cpu, unsigned char val);
 unsigned char pop(struct CPU *cpu);
 unsigned short popAbsoluteAddress(struct CPU *cpu);
