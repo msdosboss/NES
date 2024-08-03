@@ -5037,17 +5037,17 @@ C6E4
 1a instructions does not exist
 C6E5            
 3a instructions does not exist
-C6E6  5A 7A DA  xú% A:EA X:97 Y:4E P:ED SP:F3
+C6E6  5A 7A DA  Þè© A:EA X:97 Y:4E P:ED SP:F3
 5a instructions does not exist
 C6E7            
 7a instructions does not exist
-C6E8  DA FA 80  ¬¦%                             A:EA X:97 Y:4E P:ED SP:F3
+C6E8  DA FA 80  Ñ·                             A:EA X:97 Y:4E P:ED SP:F3
 da instructions does not exist
 C6E9            
 fa instructions does not exist
 C6EA            ÿÿÿ A:EA X:97 Y:4E P:ED SP:F3
 80 instructions does not exist
-C6EB  89 EA EA  zú%                             A:EA X:97 Y:4E P:ED SP:F3
+C6EB  89 EA EA  àè©                             A:EA X:97 Y:4E P:ED SP:F3
 89 instructions does not exist
 C6EC  EA        NOP                             A:EA X:97 Y:4E P:ED SP:F3
 C6ED  EA        NOP                             A:EA X:97 Y:4E P:ED SP:F3
@@ -5064,10 +5064,10 @@ C6F6  A9 A9     LDA #$A9                        A:A9 X:97 Y:4E P:ED SP:F1
 C6F8            
 5c instructions does not exist
 C6F9  A9 A9     LDA #$A9                        A:A9 X:97 Y:4E P:ED SP:F1
-C6FB  7C A9 A9  uú% A:A9 X:97 Y:4E P:ED SP:F1
+C6FB  7C A9 A9  Ûè© A:A9 X:97 Y:4E P:ED SP:F1
 7c instructions does not exist
 C6FC  A9 A9     LDA #$A9                        A:A9 X:97 Y:4E P:ED SP:F1
-C6FE  DC A9 A9  {ú% A:A9 X:97 Y:4E P:ED SP:F1
+C6FE  DC A9 A9  áè© A:A9 X:97 Y:4E P:ED SP:F1
 dc instructions does not exist
 C6FF  A9 A9     LDA #$A9                        A:A9 X:97 Y:4E P:ED SP:F1
 C701            
@@ -5177,17 +5177,17 @@ C6E4
 1a instructions does not exist
 C6E5            
 3a instructions does not exist
-C6E6  5A 7A DA  xú% A:EA X:00 Y:53 P:A4 SP:F3
+C6E6  5A 7A DA  Þè© A:EA X:00 Y:53 P:A4 SP:F3
 5a instructions does not exist
 C6E7            
 7a instructions does not exist
-C6E8  DA FA 80  ¬¦%                             A:EA X:00 Y:53 P:A4 SP:F3
+C6E8  DA FA 80  Ñ·                             A:EA X:00 Y:53 P:A4 SP:F3
 da instructions does not exist
 C6E9            
 fa instructions does not exist
 C6EA            ÿÿÿ A:EA X:00 Y:53 P:A4 SP:F3
 80 instructions does not exist
-C6EB  89 EA EA  zú%                             A:EA X:00 Y:53 P:A4 SP:F3
+C6EB  89 EA EA  àè©                             A:EA X:00 Y:53 P:A4 SP:F3
 89 instructions does not exist
 C6EC  EA        NOP                             A:EA X:00 Y:53 P:A4 SP:F3
 C6ED  EA        NOP                             A:EA X:00 Y:53 P:A4 SP:F3
@@ -5204,10 +5204,10 @@ C6F6  A9 A9     LDA #$A9                        A:A9 X:00 Y:53 P:A4 SP:F1
 C6F8            
 5c instructions does not exist
 C6F9  A9 A9     LDA #$A9                        A:A9 X:00 Y:53 P:A4 SP:F1
-C6FB  7C A9 A9  uú% A:A9 X:00 Y:53 P:A4 SP:F1
+C6FB  7C A9 A9  Ûè© A:A9 X:00 Y:53 P:A4 SP:F1
 7c instructions does not exist
 C6FC  A9 A9     LDA #$A9                        A:A9 X:00 Y:53 P:A4 SP:F1
-C6FE  DC A9 A9  {ú% A:A9 X:00 Y:53 P:A4 SP:F1
+C6FE  DC A9 A9  áè© A:A9 X:00 Y:53 P:A4 SP:F1
 dc instructions does not exist
 C6FF  A9 A9     LDA #$A9                        A:A9 X:00 Y:53 P:A4 SP:F1
 C701            

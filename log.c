@@ -167,8 +167,8 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			unsigned short address = absoluteAddress(cpu, cpu->PC + 1) + cpu->x;
 			str[i++] = '$';
 			sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x), busRead(&(cpu->bus), address);
-			for(int j = 0; j < 18; j++){
-				str[i + j] = upper(str[i + j]);
+			for(int j = i; j < i + 18; j++){
+				str[j] = upper(str[j]);
 			}
 			i += 18;
 			for(int j = i; j < i + 9; j++){
