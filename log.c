@@ -163,10 +163,9 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			break;
 		}
 		case ABSOLUTEX:{
-			//printf("address read = %02x\n", busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1) + cpu->x));
 			unsigned short address = absoluteAddress(cpu, cpu->PC + 1) + cpu->x;
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x), busRead(&(cpu->bus), address);
+			sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x, busRead(&(cpu->bus), address));
 			for(int j = i; j < i + 18; j++){
 				str[j] = upper(str[j]);
 			}
