@@ -173,6 +173,33 @@ void adc(struct CPU *cpu){
 	cpu->PC++;
 }
 
+void alr(struct CPU *cpu){	//unofficial instruction
+	unsigned char arg = busRead(&(cpu->bus), cpu->PC);
+	cpu->accumulator &= arg;
+	if((cpu->accumulator & 0b00000001) != 0){	//turns carry bit on
+		cpu->processorStatus |= 0b00000001;
+	}
+	else{	//turns carry bit off
+		cpu->processorStatus &= 0b11111110;	
+	}
+	cpu->accumulator >>= 1;
+
+	zeroFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->accumulator);
+	cpu->PC++;	
+}
+
+void anc(struct CPU *cpu){	//unofficial instruction
+	unsigned char arg = busRead(&(cpu->bus), cpu->PC);
+	cpu->accumulator &= arg;
+	
+	negativeFlag(cpu, cpu->accumulator);
+	zeroFlag(cpu, cpu->accumulator);
+	carryFlag(cpu, cpu->accumulator);
+
+	cpu->PC++;
+}
+
 void and(struct CPU *cpu){
 	unsigned char arg;
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
@@ -237,6 +264,33 @@ void and(struct CPU *cpu){
 	zeroFlag(cpu, cpu->accumulator);
 }
 
+void arr(struct CPU *cpu){	//unofficial instruction
+	unsigned char arg = busRead(&(cpu->bus), cpu->PC);
+	cpu->accumulator &= arg;
+	cpu->accumulator >>= 1;
+	cpu->accumulator |= (cpu->processorStatus << 7);
+	
+	if((cpu->accumulator & 0b01000000) != 0){
+		cpu->processorStatus |= 0b00000001;	//turn on carry bit
+	}
+	else{
+		cpu->processorStatus &= 0b11111110;	//turn off carry bit
+	}
+
+	if(((cpu->accumulator & 0b01000000) != 0) ^ ((cpu->accumulator & 0b00100000) != 0)){
+		cpu->processorStatus |= 0b01000000;	//turn on overflow bit
+	}
+	else{
+		cpu->processorStatus &= 0b10111111;	//turn off overflow bit
+	}
+
+	negativeFlag(cpu, cpu->accumulator);
+
+	zeroFlag(cpu, cpu->accumulator);
+
+	cpu->PC++;
+}
+
 void asl(struct CPU *cpu){
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	switch(opCode){	//note with these shifts I am still assuming that when you shift a bit in from the left it will always be 0, if that is not the case this will not work
@@ -289,6 +343,45 @@ void asl(struct CPU *cpu){
 			break;
 		}
 	}
+}
+
+void axs(struct CPU *cpu){	//unofficial instruction
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
+		case 0x87:{	//zero page
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			break;
+		}
+
+		case 0x97:{	//zero page,Y
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
+			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			break;
+		}
+
+		case 0x8f:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			cpu->PC++;
+			break;
+		}
+
+		case 0x83:{	//indirect,X
+			unsigned short address = indirectXAddress(cpu);
+			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
+			zeroFlag(cpu, busRead(&(cpu->bus), address));
+			negativeFlag(cpu, busRead(&(cpu->bus), address));
+			break;
+		}
+	}
+	cpu->PC++;
 }
 
 void bcc(struct CPU *cpu){
@@ -1585,7 +1678,14 @@ void cpuLoop(struct CPU *cpu){
 			adc(cpu);
 			break;
 		}
-	
+
+		case 0x0b:
+		case 0x2b:{
+			cpu->PC++;
+			anc(cpu);
+			break;
+		}
+
 		case 0x29:
 		case 0x25:			
 		case 0x35:			
@@ -1598,7 +1698,13 @@ void cpuLoop(struct CPU *cpu){
 			and(cpu);
 			break;
 		}			
-		
+
+		case 0x6b:{
+			cpu->PC++;
+			arr(cpu);
+			break;
+		}
+
 		case 0x0a:
 		case 0x06:
 		case 0x16:
@@ -1606,6 +1712,15 @@ void cpuLoop(struct CPU *cpu){
 		case 0x1e:{
 			cpu->PC++;
 			asl(cpu);
+			break;
+		}
+
+		case 0x87:
+		case 0x97:
+		case 0x83:
+		case 0x8f:{
+			cpu->PC++;
+			axs(cpu);
 			break;
 		}
 
