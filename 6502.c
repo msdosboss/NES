@@ -761,7 +761,7 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 		case 0xc7:{	//zero page
 			arg = busRead(&(cpu->bus), cpu->PC);
 			busWrite(&(cpu->bus), cpu->PC, arg - 1);
-			carryFlag(cpu, busRead(&(cpu->bus), CPU->PC));
+			carryFlag(cpu, busRead(&(cpu->bus), cpu->PC));
 			break;
 		}
 
@@ -878,13 +878,13 @@ void dop(struct CPU *cpu){
 		case 0x89:
 		case 0xe2:
 		case 0xc2:{	//immediate
-			continue;
+			break;
 		}
 
 		case 0x04:
 		case 0x44:
 		case 0x64:{	//zero page
-			continue;
+			break;
 		}
 
 		case 0x14:
@@ -893,7 +893,7 @@ void dop(struct CPU *cpu){
 		case 0x74:
 		case 0xd4:
 		case 0xf4:{	//zero page,X
-			continue;
+			break;
 		}
 	}
 }
@@ -1020,7 +1020,8 @@ void iny(struct CPU *cpu){
 	negativeFlag(cpu, cpu->y);
 }
 
-void isc(struct CPU *cpu){
+void isb(struct CPU *cpu){
+	unsigned char result;
 	unsigned char arg;
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	switch(opCode){
@@ -1028,28 +1029,68 @@ void isc(struct CPU *cpu){
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, ++arg);
-			
 			break;
 		}
-		case 0xf7:{	//zero page
+		case 0xf7:{	//zero page,X
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
 			break;
 		}
-		case 0xef:{	//zero page
+		case 0xef:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
+			cpu->PC++;
 			break;
 		}
-		case 0xff:{	//zero page
+		case 0xff:{	//absolute,X
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
+			cpu->PC++;
 			break;	
 		}
-		case 0xfb:{	//zero page
+		case 0xfb:{	//absolute,Y
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
+			cpu->PC++;
 			break;
 		}
-		case 0xe3:{	//zero page
+		case 0xe3:{	//indirect,X
+			unsigned short address = indirectXAddress(cpu);
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
 			break;
 		}
-		case 0xf3:{	//zero page
+		case 0xf3:{	//indirect,Y
+			unsigned short address = indirectYAddress(cpu);
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, ++arg);
 			break;
 		}
 	}
+	result = cpu->accumulator - arg - !(cpu->processorStatus & 0b00000001);
+	if(result <= 0xff){	//Set carry flag
+		cpu->processorStatus |= 0b00000001;
+	}
+	else{
+		cpu->processorStatus &= 0b11111110;
+	}
+	
+	if(((cpu->accumulator ^ arg) & 0b10000000) != 0 && ((cpu->accumulator ^ result) & 0b10000000) != 0){	//set overflow flag
+		cpu->processorStatus |= 0b01000000;
+	}
+	else{
+		cpu->processorStatus &= 0b10111111;
+	}
+	
+	cpu->accumulator = result & 0xff;
+
+	zeroFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->accumulator);
+	cpu->PC++;
 }
 
 void jmp(struct CPU *cpu){
@@ -1076,6 +1117,67 @@ void jsr(struct CPU *cpu){
 	push(cpu, (unsigned char)(orcaIndex));	//pushes the first 8 bits of the address to stack
 	unsigned short address = absoluteAddress(cpu, cpu->PC);
 	cpu->PC = address;
+}
+
+void las(struct CPU *cpu){	//unofficial instruction
+	unsigned char result;
+	unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;	//don't ask me why this is the only address mode for this instruction
+	
+	result = ((cpu->stackPointer - cpu->bus.prgRam) - 0x100) & busRead(&(cpu->bus), address);
+	
+	cpu->accumulator = result;
+	cpu->x = result;
+	cpu->stackPointer = result + cpu->bus.prgRam + 0x100;
+	
+	cpu->PC += 2;
+}
+
+void lax(struct CPU *cpu){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
+		case 0xa7:{	//zero page
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+		}
+
+		case 0xb7:{	//zero page,Y
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+		}
+
+		case 0xaf:{	//absolute
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+			cpu->PC++;
+		}
+
+		case 0xbf:{	//absolute,Y
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+			cpu->PC++;
+		}
+
+		case 0xa3:{	//indirect,X
+			unsigned short address = indirectXAddress(cpu);
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+		}
+
+		case 0xb3:{	//indirect,Y
+			unsigned short address = indirectXAddress(cpu);
+			cpu->accumulator = busRead(&(cpu->bus), address);
+			cpu->x = busRead(&(cpu->bus), address);
+		}
+	}
+
+	zeroFlag(cpu, cpu->accumulator);
+	negativeFlag(cpu, cpu->accumulator);
+
+	cpu->PC++;
 }
 
 void lda(struct CPU *cpu){
@@ -1408,6 +1510,39 @@ void pla(struct CPU *cpu){
 
 void plp(struct CPU *cpu){
 	cpu->processorStatus = ((pop(cpu) & 0b11101111) | 0b00100000);
+}
+
+void rla(struct CPU *cpu){
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	switch(opCode){
+		case 0x27:{	//zero page
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+		}
+
+		case 0x37:{	//zero page,X
+
+		}
+
+		case 0x2f:{	//absolute
+
+		}
+
+		case 0x3f:{	//absolute,X
+
+		}
+
+		case 0x3b:{	//absolute,Y
+
+		}
+
+		case 0x23:{	//indirect,X
+
+		}
+
+		case 0x33:{	//indirect,Y
+
+		}
+	}
 }
 
 void rol(struct CPU *cpu){
@@ -2091,6 +2226,18 @@ void cpuLoop(struct CPU *cpu){
 
 		}
 
+		case 0xe7:
+		case 0xf7:
+		case 0xef:
+		case 0xff:
+		case 0xfb:
+		case 0xe3:
+		case 0xf3:{
+			cpu->PC++;
+			isb(cpu);
+			break;
+		}
+
 		case 0x4c:
 		case 0x6c:{
 			cpu->PC++;
@@ -2102,6 +2249,23 @@ void cpuLoop(struct CPU *cpu){
 		case 0x20:{
 			cpu->PC++;
 			jsr(cpu);
+			break;
+		}
+
+		case 0xbb:{
+			cpu->PC++;
+			las(cpu);
+			break;
+		}
+
+		case 0xa7:
+		case 0xb7:
+		case 0xaf:
+		case 0xbf:
+		case 0xa3:
+		case 0xb3:{
+			cpu->PC++;
+			lax(cpu);
 			break;
 		}
 
@@ -2149,6 +2313,24 @@ void cpuLoop(struct CPU *cpu){
 			break;
 		}
 
+		case 0x02:	//The rest of these are the KIL unofficial instructions
+		case 0x12:	//From my understanding I don't think it does anything
+		case 0x22:	//So I am going to just treat it as NOP
+		case 0x32:	//https://www.nesdev.org/undocumented_opcodes.txt
+		case 0x42:
+		case 0x52:
+		case 0x62:
+		case 0x72:
+		case 0x92:
+		case 0xb2:
+		case 0xd2:
+		case 0xf2:
+		case 0x1a:	//start of unofficial NOP instructions
+		case 0x3a:	
+		case 0x5a:	
+		case 0x7a:	
+		case 0xda:	
+		case 0xfa:	//end of unofficial NOP instructions
 		case 0xea:{	//NOP instruction
 			cpu->PC++;
 			break;
