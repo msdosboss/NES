@@ -38,6 +38,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 	
 	str[i++] = ' ';
 
+	if(opcode.isOfficial == UNOFFICIAL){
+		str[i++] = '*';
+	}
+
 	sprintf(&(str[i]), "%s", opcode.name);
 
 	i += 3;

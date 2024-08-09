@@ -15,13 +15,17 @@
 #define RELATIVE 10
 #define NONEADDRESSING 0
 
+#define OFFICIAL 1
+#define UNOFFICIAL 0
+
 struct Opcode{
 	unsigned char code;
 	char name[3];
 	int len;
 	int cycles;
 	int addressingMode;
+	int isOfficial;
 };
-struct Opcode initOpcode(unsigned char code, const char *name, int len, int cycles, int addressingMode);
+struct Opcode initOpcode(unsigned char code, const char *name, int len, int cycles, int addressingMode, int isOfficial);
 void createOpArray(struct Opcode *opcodes);
 #endif
