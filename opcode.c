@@ -204,12 +204,12 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0xbb] = initOpcode(0xbb, "LAS", 3, 4, ABSOLUTEY, UNOFFICIAL);
 
 	//LAX
-	opcodes[0xa7] = initOpcode(0xa7, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
-	opcodes[0xbf] = initOpcode(0xbb, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
-	opcodes[0xbf] = initOpcode(0xbb, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
+	opcodes[0xa7] = initOpcode(0xa7, "LAX", 2, 4, ZEROPAGE, UNOFFICIAL);
+	opcodes[0xb7] = initOpcode(0xb7, "LAX", 2, 4, ZEROPAGEY, UNOFFICIAL);
+	opcodes[0xaf] = initOpcode(0xAF, "LAX", 3, 4, ABSOLUTE, UNOFFICIAL);
 	opcodes[0xbf] = initOpcode(0xbf, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
-	opcodes[0xbf] = initOpcode(0xbb, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
-	opcodes[0xbf] = initOpcode(0xbb, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
+	opcodes[0xa3] = initOpcode(0xa3, "LAX", 2, 6, INDIRECTX, UNOFFICIAL);
+	opcodes[0xb3] = initOpcode(0xb3, "LAX", 2, 4, INDIRECTY, UNOFFICIAL);
 
 	//LDA
 	opcodes[0xa9] = initOpcode(0xa9, "LDA", 2, 2, IMMEDIATE, OFFICIAL);
@@ -377,7 +377,7 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0x9c] = initOpcode(0x9c, "SYA", 3, 5, ABSOLUTEX, UNOFFICIAL);
 
 	//TAS
-	opcodes[0x9b] = initOpcode(0x9b, "TAS", 3, 5, ABSOLUTEY, UNOFFICIAL);
+	opcodes[0x9b] = initOpcode(0x9b, "TAS", 3, 5, ABSOLUTEY, UNOFFICIAL);;
 
 	//Transfer
 	opcodes[0xaa] = initOpcode(0xaa, "TAX", 1, 2, NONEADDRESSING, OFFICIAL);

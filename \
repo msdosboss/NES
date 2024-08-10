@@ -37,6 +37,7 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 	}
 	
 	if(opcode.isOfficial == UNOFFICIAL){
+		str[i++] = ' ';
 		str[i++] = '*';
 	}
 	else{
@@ -72,10 +73,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 				i += 14;
 			}
 			else{
-				for(int j = i; j < i + 28; j++){
+				for(int j = i; j < i + 28 - !opcode.isOfficial; j++){
 					str[j] = ' ';
 				}
-				i += 28;
+				i += 28 - !opcode.isOfficial;
 			}
 			break;
 		}
@@ -107,10 +108,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			for(int j = i - 7; i > j; j++){
 				str[j] = upper(str[j]);
 			}
-			for(int j = i; j < i + 20; j++){
+			for(int j = i; j < i + 20 - !opcode.isOfficial; j++){
 				str[j] = ' ';
 			}
-			i += 20;
+			i += 20 - !opcode.isOfficial;
 			break;
 		}
 
