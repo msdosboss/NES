@@ -11,10 +11,17 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 		addr &= 0b11111111111;
 		return bus->prgRam[addr];
 	}
+
 	if(addr >= 0x2000 && addr < 0x4000){
 		printf("PPU not supported yet");
 		return 0;
 	}
+
+	if(addr >= 0x4000 && addr < 0x401f){	
+		printf("APU not supported yet");
+		return 0;
+	}
+
 	if(addr >= 0x8000 && addr <= 0x10000){
 		addr -= 0x8000;
 		if(addr >= 0x4000 && bus->rom.prgRomLen == 0x4000){
@@ -29,8 +36,13 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 		addr &= 0b11111111111;
 		bus->prgRam[addr] = data;
 	}
+
 	if(addr >= 0x2000 && addr < 0x4000){
 		printf("PPU not supported yet");
+	}
+
+	if(addr >= 0x4000 && addr < 0x401f){	
+		printf("APU not supported yet");
 	}
 
 	if(addr >= 0x8000 && addr <= 0x10000){

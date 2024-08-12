@@ -757,18 +757,45 @@ void cpy(struct CPU *cpu){
 void dcp(struct CPU *cpu){	//unofficial instruction
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	unsigned char arg;
+	unsigned char result;
 	switch(opCode){
 		case 0xc7:{	//zero page
-			arg = busRead(&(cpu->bus), cpu->PC);
-			busWrite(&(cpu->bus), cpu->PC, arg - 1);
-			carryFlag(cpu, busRead(&(cpu->bus), cpu->PC));
+			unsigned char address = busRead(&(cpu->bus), cpu->PC);
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, arg - 1);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}
 
 		case 0xd7:{	//zero page,X
-			arg = busRead(&(cpu->bus), cpu->PC + cpu->x);
-			busWrite(&(cpu->bus), cpu->PC + cpu->x, arg - 1);
-			carryFlag(cpu, busRead(&(cpu->bus), cpu->PC + cpu->x));
+			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->x;
+			arg = busRead(&(cpu->bus), address);
+			busWrite(&(cpu->bus), address, arg - 1);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}
 
@@ -776,8 +803,20 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			cpu->PC++;
-			carryFlag(cpu, busRead(&(cpu->bus), address));
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}
 
@@ -785,8 +824,20 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			cpu->PC++;
-			carryFlag(cpu, busRead(&(cpu->bus), address));
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}
 
@@ -794,8 +845,20 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			cpu->PC++;
-			carryFlag(cpu, busRead(&(cpu->bus), address));
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}
 
@@ -803,7 +866,19 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 			unsigned short address = indirectXAddress(cpu);
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
-			carryFlag(cpu, busRead(&(cpu->bus), address));
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 
 		}
@@ -812,10 +887,24 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 			unsigned short address = indirectYAddress(cpu);
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
-			carryFlag(cpu, busRead(&(cpu->bus), address));
+			result = cpu->accumulator - busRead(&(cpu->bus), address);
+			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
+				carryFlag(cpu, 0b10000000);	//set carry flag on
+			}
+			else{
+				carryFlag(cpu, 0);
+			}
+			if(cpu->accumulator == busRead(&(cpu->bus), address)){
+				zeroFlag(cpu, 0);	//set zero flag on
+			}
+			else{
+				zeroFlag(cpu, 1);	
+			}
 			break;
 		}	
 	}
+	negativeFlag(cpu, result);
+
 	cpu->PC++;
 }
 
@@ -1022,7 +1111,7 @@ void iny(struct CPU *cpu){
 }
 
 void isb(struct CPU *cpu){
-	unsigned char result;
+	unsigned short result;
 	unsigned char arg;
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	switch(opCode){
@@ -1174,7 +1263,7 @@ void lax(struct CPU *cpu){
 		}
 
 		case 0xb3:{	//indirect,Y
-			unsigned short address = indirectXAddress(cpu);
+			unsigned short address = indirectYAddress(cpu);
 			cpu->accumulator = busRead(&(cpu->bus), address);
 			cpu->x = busRead(&(cpu->bus), address);
 			break;
@@ -1736,14 +1825,16 @@ void ror(struct CPU *cpu){
 void rra(struct CPU *cpu){	//unofficial instruction
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	unsigned char preShiftVal;
+	unsigned short result;
+	unsigned char val;
 	switch(opCode){
 		case 0x67:{	//zero page
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			break;
 		}
 
@@ -1752,8 +1843,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			break;
 		}
 
@@ -1762,8 +1853,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			cpu->PC++;
 			break;
 		}
@@ -1773,8 +1864,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			cpu->PC++;
 			break;
 		}
@@ -1784,8 +1875,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			cpu->PC++;
 			break;
 		}
@@ -1795,8 +1886,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			break;
 		}
 
@@ -1805,11 +1896,29 @@ void rra(struct CPU *cpu){	//unofficial instruction
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
+			val = busRead(&(cpu->bus), address);
 			carryFlag(cpu, preShiftVal << 7);
-			cpu->accumulator &= busRead(&(cpu->bus), address);
 			break;
 		}
 	}
+	result = cpu->accumulator + val + (cpu->processorStatus & 0b00000001);
+	
+	if(result > 0xff){	//Set carry flag
+		cpu->processorStatus |= 0b00000001;
+	}
+	else{
+		cpu->processorStatus &= 0b11111110;
+	}
+	
+	if(((cpu->accumulator ^ val) & 0b10000000) == 0 && ((cpu->accumulator ^ result) & 0b10000000) != 0){	//set overflow flag
+		cpu->processorStatus |= 0b01000000;
+	}
+	else{
+		cpu->processorStatus &= 0b10111111;
+	}
+	
+	cpu->accumulator = result & 0xff;
+
 	zeroFlag(cpu, cpu->accumulator);
 	negativeFlag(cpu, cpu->accumulator);
 
@@ -1831,24 +1940,18 @@ void sax(struct CPU *cpu){	//unofficial instruction
 		case 0x87:{	//zero page
 			unsigned char address = busRead(&(cpu->bus), cpu->PC);
 			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
-			zeroFlag(cpu, busRead(&(cpu->bus), address));
-			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			break;
 		}
 
 		case 0x97:{	//zero page,Y
 			unsigned char address = busRead(&(cpu->bus), cpu->PC) + cpu->y;
 			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
-			zeroFlag(cpu, busRead(&(cpu->bus), address));
-			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			break;
 		}
 
 		case 0x8f:{	//absolute
 			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
-			zeroFlag(cpu, busRead(&(cpu->bus), address));
-			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			cpu->PC++;
 			break;
 		}
@@ -1856,8 +1959,6 @@ void sax(struct CPU *cpu){	//unofficial instruction
 		case 0x83:{	//indirect,X
 			unsigned short address = indirectXAddress(cpu);
 			busWrite(&(cpu->bus), address, (cpu->accumulator & cpu->x));
-			zeroFlag(cpu, busRead(&(cpu->bus), address));
-			negativeFlag(cpu, busRead(&(cpu->bus), address));
 			break;
 		}
 	}
@@ -2053,7 +2154,7 @@ void sre(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x5f:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
 			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
 			cpu->accumulator ^= busRead(&(cpu->bus), address);
@@ -2062,7 +2163,7 @@ void sre(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x5b:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
 			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
 			cpu->accumulator ^= busRead(&(cpu->bus), address);
