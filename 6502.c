@@ -2374,7 +2374,6 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 }
 
 void cpuLoop(struct CPU *cpu){
-	//printf("Instruction %x is being run and pc is pointing at %x in memory\n processorStatus = %b\n cpu->accumulator = %x\nval at 0xff = %x and val at 0x02 = %x\n", busRead(&(cpu->bus), cpu->PC), cpu->PC, cpu->processorStatus, cpu->accumulator, busRead(&(cpu->bus), 0xff), busRead(&(cpu->bus), 0x02));
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
 	cpu->PC++;
 	switch(opCode){
