@@ -1,14 +1,4 @@
-#include "ppu.h"
-
-/*
-struct PPU{
-	unsigned char *chrRom;
-	unsigned char paletteTable[32];
-	unsigned char vram[2048];
-	unsigned char oamData[256];
-	int mirrorMode;
-};
-*/
+#include "controller.h"
 
    // 7  bit  0
    // ---- ----
@@ -27,10 +17,11 @@ struct PPU{
    // +--------- Generate an NMI at the start of the
    //            vertical blanking interval (0: off; 1: on)
 
-void initPPU(struct PPU *ppu, struct Rom *rom){
-	ppu->chrRom = rom->chrRom;
-	memset(ppu->paletteTable, 0, sizeof(ppu->paletteTable));
-	memset(ppu->vram, 0, sizeof(ppu->vram));
-	memset(ppu->oamData, 0, sizeof(ppu->oamData));
-	ppu->mirrorMode = rom->mirrorMode;
+int vramAddrIncAmount(unsigned char ppuController){
+	if((ppuController & VRAMINCAMOUNT) != 0){
+		return 32;
+	}
+	else{
+		return 1;
+	}
 }
