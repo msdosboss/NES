@@ -7,25 +7,12 @@ struct PPU{
 	unsigned char vram[2048];
 	unsigned char oamData[256];
 	int mirrorMode;
+
+	struct AddrRegister addr;
+	unsigned char controller;
+	unsigned char dataBuffer;
 };
 */
-
-   // 7  bit  0
-   // ---- ----
-   // VPHB SINN
-   // |||| ||||
-   // |||| ||++- Base nametable address
-   // |||| ||    (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
-   // |||| |+--- VRAM address increment per CPU read/write of PPUDATA
-   // |||| |     (0: add 1, going across; 1: add 32, going down)
-   // |||| +---- Sprite pattern table address for 8x8 sprites
-   // ||||       (0: $0000; 1: $1000; ignored in 8x16 mode)
-   // |||+------ Background pattern table address (0: $0000; 1: $1000)
-   // ||+------- Sprite size (0: 8x8 pixels; 1: 8x16 pixels)
-   // |+-------- PPU master/slave select
-   // |          (0: read backdrop from EXT pins; 1: output color on EXT pins)
-   // +--------- Generate an NMI at the start of the
-   //            vertical blanking interval (0: off; 1: on)
 
 void initPPU(struct PPU *ppu, struct Rom *rom){
 	ppu->chrRom = rom->chrRom;
@@ -33,4 +20,52 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	memset(ppu->vram, 0, sizeof(ppu->vram));
 	memset(ppu->oamData, 0, sizeof(ppu->oamData));
 	ppu->mirrorMode = rom->mirrorMode;
+}
+
+unsigned char ppuRead(struct PPU *ppu){
+	unsigned short address = getAddrRegister(&(ppu->addr));
+	for(int i = 0; i < vramAddrIncAmount(ppu->controller); i++){
+		incrementAddrRegister(&(ppu->addr));
+	}
+	if(address >= 0x0 && address <= 0x1fff){
+		unsigned char data = ppu->dataBuffer;
+		ppu->dataBuffer = chrRom[addr];
+		return data;
+	}
+
+	else if(address >= 0x2000 && address <= 0x2fff){
+		unsigned char data = ppu->dataBuffer;
+		ppu->dataBuffer = ppu->vram[addr - 0x2000];	//NEED TO IMPLEMENT MIRRORING!!!!
+		return data;
+	}
+
+	else if(address >= 0x3000 && addresss <= 0x3eff){
+		printf("addr space %x is not suppose to be used!\n", address);
+	}
+
+	else if(address >= 0x3f00 && address <= 0x3fff){
+		return ppu->paletteTable[address - 0x3f00];
+	}
+}
+
+unsigned short mirroredVramAddr(unsigned short address){
+	unsigned short mirroredVram = address & 0b10111111111111;	//mirror down 0x3000-0x3eff to 0x2000-0x20eff
+	mirroredVram -= 0x2000;
+	unsigned short nameTable = mirroredVram / 0x400	//Name table index 
+
+	if(ppu->mirrorMode == HORIZONTAL){
+		if(nameTable == 1 || nameTable == 2){
+			mirroredVram -= 0x400;
+		}
+		if(nameTable == 3){
+			mirroredVram -= 0x800;
+		}
+	}
+	else if(ppu->mirrorMode == VERTICAL){
+		if(nameTable == 2 || nameTable == 3){
+			mirroredVram -= 0x800;
+		}
+	}
+
+	return mirroredVram;
 }

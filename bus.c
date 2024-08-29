@@ -13,8 +13,9 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	if(addr >= 0x2000 && addr < 0x4000){
-		printf("PPU not supported yet");
-		return 0;
+		addr %= 8;
+		addr += 2000;	//addresses 0x2000-0x2007 are mirrored between 0x2008-0x3fff
+		return bus->prgRam[addr];
 	}
 
 	if(addr >= 0x4000 && addr < 0x401f){	
@@ -38,7 +39,9 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	if(addr >= 0x2000 && addr < 0x4000){
-		printf("PPU not supported yet");
+		addr %= 8;
+		addr += 2000;	//addresses 0x2000-0x2007 are mirrored between 0x2008-0x3fff
+		bus->prgRam[addr] = data;
 	}
 
 	if(addr >= 0x4000 && addr < 0x401f){	
