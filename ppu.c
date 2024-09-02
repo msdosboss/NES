@@ -5,10 +5,12 @@ struct PPU{
 	unsigned char *chrRom;
 	unsigned char paletteTable[32];
 	unsigned char vram[2048];
+	unsigned char oamAddr;
 	unsigned char oamData[256];
 	int mirrorMode;
 
 	struct AddrRegister addr;
+	unsigned char status;
 	unsigned char controller;
 	unsigned char dataBuffer;
 };
