@@ -12,6 +12,8 @@ struct PPU{
 	struct AddrRegister addr;
 	unsigned char status;
 	unsigned char controller;
+	unsigned char mask;
+	unsigned char scroll;
 	unsigned char dataBuffer;
 };
 */
@@ -43,10 +45,34 @@ unsigned char ppuRead(struct PPU *ppu){
 
 	else if(address >= 0x3000 && addresss <= 0x3eff){
 		printf("addr space %x is not suppose to be used!\n", address);
+		return -1;
 	}
 
-	else if(address >= 0x3f00 && address <= 0x3fff){
+	else if(address >= 0x3f00 && address <= 0x3fff){	//NEED TO IMPLEMENT MIRRORING!!!!
 		return ppu->paletteTable[address - 0x3f00];
+	}
+}
+
+void ppuWrite(struct PPU *ppu, unsigned char data){
+	unsigned short address = getAddrRegister(&(ppu->addr));
+	for(int i = 0; i < vramAddrIncAmount(ppu->controller); i++){
+		incrementAddrRegister(&(ppu->addr));
+	}
+
+	if(address >= 0x0 && address < 0x2000){
+		printf("Trying to write to ROM at address %x", address);
+	}
+
+	else if(address >= 0x2000 && < 0x2fff){
+		ppu->vram[addr - 0x2000] = data;
+	}
+
+	else if(address >= 0x3000 && addresss < 0x3f00){
+		printf("addr space %x is not suppose to be used!\n", address);
+	}
+
+	else if(address >= 0x3f00 && address < 0x4000){	//NEED TO IMPLEMENT MIRRORING!!!!
+		ppu->paletteTable[addr - 0x3f00] = data;
 	}
 }
 
@@ -70,4 +96,22 @@ unsigned short mirroredVramAddr(unsigned short address){
 	}
 
 	return mirroredVram;
+}
+
+void writeToCtrl(struct PPU *ppu, unsigned char data){
+	int beforeNmiStatus = ppu->controller & 0b10000000;
+	ppu->controller = data;
+}
+
+void writeToOamAddr(struct PPU *ppu, unsigned char data){
+	ppu->oamAddr = data;
+}
+
+void writeToOamData(struct PPU *ppu, unsigned char data){
+	ppu->oamData[ppu->oamAddr] = data;
+	ppu->oamAddr++;
+}
+
+void writeToScroll(struct PPU *ppu, unsigned char data){
+	ppu->scroll = data;
 }

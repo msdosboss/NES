@@ -16,9 +16,16 @@ struct PPU{
 	struct AddrRegister addr;
 	unsigned char status;
 	unsigned char controller;
+	unsigned char mask;
+	unsigned char scroll;
 	unsigned char dataBuffer;
 };
 
 void initPPU(struct PPU *ppu, struct Rom *rom);
 unsigned char ppuRead(struct PPU *ppu);
+void ppuWrite(struct PPU *ppu, unsigned char data);
 unsigned short mirroredVramAddr(unsigned short address);
+void writeToCtrl(struct PPU *ppu, unsigned char data);
+void writeToOamAddr(struct PPU *ppu, unsigned char data);
+void writeToOamData(struct PPU *ppu, unsigned char data);
+void writeToScroll(struct PPU *ppu, unsigned char data);
