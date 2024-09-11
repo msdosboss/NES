@@ -2,3 +2,5 @@
 #include <stdlib.h>
 
 unsigned char statusRead(unsigned char *status);
+void statusVblankOn(unsigned char *status);
+void statusVblankOff(unsigned char *status)

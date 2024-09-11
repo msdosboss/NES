@@ -5,6 +5,8 @@
 	unsigned short PC;
 	unsigned char *stackPointer;
 	struct Bus bus;
+
+	int extraCycles;
 };*/
 
 void zeroFlag(struct CPU *cpu, unsigned char reg){
@@ -68,7 +70,8 @@ unsigned short indirectXAddress(struct CPU *cpu){
 
 unsigned short indirectYAddress(struct CPU *cpu){
 	unsigned char indirectAddress = busRead(&(cpu->bus), cpu->PC);
-	return rollOverAbsoluteAddress(cpu, indirectAddress) + cpu->y;
+	//return rollOverAbsoluteAddress(cpu, indirectAddress) + cpu->y;	needed to change this so I could detect page rollovers for extra clock cycles
+	return rollOverAbsoluteAddress(cpu, indirectAddress);
 }
 
 unsigned short indirectAddress(struct CPU *cpu){
@@ -96,6 +99,13 @@ unsigned short popAbsoluteAddress(struct CPU *cpu){
 	address |= pop(cpu);
 	address |= (((unsigned short)pop(cpu)) << 8);	//this should take what is returned from pop and store it in the last 8 bits of address
 	return address;
+}
+
+int isPageCrossed(unsigned short baseAddress, unsigned char reg){
+	if(((baseAddress + reg) & 0xff) <= (baseAddress & 0xff)){	//testing if page cross
+		return 1;
+	}
+	return 0;
 }
 
 void adc(struct CPU *cpu){
@@ -127,13 +137,17 @@ void adc(struct CPU *cpu){
 		}
 
 		case 0x7d:{	//absolute,X
-			val = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->x);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			val = busRead(&(cpu->bus), address + cpu->x);
 			cpu->PC++;
 			break;
 		}
 		
 		case 0x79:{	//absolute,Y
-			val = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->y);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			val = busRead(&(cpu->bus), address + cpu->y);
 			cpu->PC++;
 			break;
 		}
@@ -144,7 +158,9 @@ void adc(struct CPU *cpu){
 		}
 
 		case 0x71:{
-			val = busRead(&(cpu->bus), indirectYAddress(cpu));
+			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			val = busRead(&(cpu->bus), address + cpu->y);
 			break;
 		}
 
@@ -251,14 +267,18 @@ void and(struct CPU *cpu){
 		}
 		
 		case 0x3d:{	//absolute,X
-			arg = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->x);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x); 
+			arg = busRead(&(cpu->bus), address + cpu->x);
 			cpu->accumulator = cpu->accumulator & arg;
 			cpu->PC++;
 			break;
 		}
 		
 		case 0x39:{	//absolute,Y
-			arg = busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC) + cpu->y);
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y); 
+			arg = busRead(&(cpu->bus), address + cpu->y);
 			cpu->accumulator = cpu->accumulator & arg;
 			cpu->PC++;
 			break;
@@ -271,6 +291,8 @@ void and(struct CPU *cpu){
 		}
 		case 0x31:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y;
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator & arg;
 			break;
@@ -379,6 +401,8 @@ void axs(struct CPU *cpu){
 
 void bcc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) == 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -386,6 +410,8 @@ void bcc(struct CPU *cpu){
 
 void bcs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) != 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -393,6 +419,8 @@ void bcs(struct CPU *cpu){
 
 void beq(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) != 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -425,6 +453,8 @@ void bit(struct CPU *cpu){
 
 void bmi(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) != 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -432,6 +462,8 @@ void bmi(struct CPU *cpu){
 
 void bne(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) == 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -439,6 +471,8 @@ void bne(struct CPU *cpu){
 
 void bpl(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) == 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -446,6 +480,8 @@ void bpl(struct CPU *cpu){
 
 void bvc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) == 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -453,6 +489,8 @@ void bvc(struct CPU *cpu){
 
 void bvs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) != 0){
+		cpu->extraCycles = 1;
+		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -551,7 +589,9 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xdd:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x; 
 			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
@@ -570,7 +610,9 @@ void cmp(struct CPU *cpu){
 		}
 
 		case 0xd9:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
@@ -608,6 +650,8 @@ void cmp(struct CPU *cpu){
 
 		case 0xd1:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			result = cpu->accumulator - busRead(&(cpu->bus), address);
 			if(cpu->accumulator >= busRead(&(cpu->bus), address)){
 				carryFlag(cpu, 0b10000000);	//set carry flag on
@@ -884,7 +928,7 @@ void dcp(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0xd3:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, arg - 1);
 			result = cpu->accumulator - busRead(&(cpu->bus), address);
@@ -1020,7 +1064,9 @@ void eor(struct CPU *cpu){
 		}
 		
 		case 0x5d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			cpu->PC++;
@@ -1028,7 +1074,9 @@ void eor(struct CPU *cpu){
 		}
 		
 		case 0x59:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			cpu->PC++;
@@ -1042,6 +1090,8 @@ void eor(struct CPU *cpu){
 		}
 		case 0x51:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator ^ arg;
 			break;
@@ -1155,7 +1205,7 @@ void isb(struct CPU *cpu){
 			break;
 		}
 		case 0xf3:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			arg = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, ++arg);
 			break;
@@ -1211,7 +1261,9 @@ void jsr(struct CPU *cpu){
 
 void las(struct CPU *cpu){	//unofficial instruction
 	unsigned char result;
-	unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;	//don't ask me why this is the only address mode for this instruction
+	unsigned short address = absoluteAddress(cpu, cpu->PC);	//don't ask me why this is the only address mode for this instruction
+	cpu->extraCycles = isPageCrossed(address, cpu->y);
+	address += cpu->y;
 	
 	result = ((cpu->stackPointer - cpu->bus.prgRam) - 0x100) & busRead(&(cpu->bus), address);
 	
@@ -1248,7 +1300,9 @@ void lax(struct CPU *cpu){
 		}
 
 		case 0xbf:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y;
 			cpu->accumulator = busRead(&(cpu->bus), address);
 			cpu->x = busRead(&(cpu->bus), address);
 			cpu->PC++;
@@ -1264,6 +1318,8 @@ void lax(struct CPU *cpu){
 
 		case 0xb3:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y;
 			cpu->accumulator = busRead(&(cpu->bus), address);
 			cpu->x = busRead(&(cpu->bus), address);
 			break;
@@ -1309,7 +1365,9 @@ void lda(struct CPU *cpu){
 		}
 
 		case 0xbd:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			cpu->PC++;
@@ -1317,7 +1375,9 @@ void lda(struct CPU *cpu){
 		}
 
 		case 0xb9:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			cpu->PC++;
@@ -1333,6 +1393,8 @@ void lda(struct CPU *cpu){
 
 		case 0xb1:{	//(indirect,Y)
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
 			break;
@@ -1384,7 +1446,9 @@ void ldx(struct CPU *cpu){
 		}
 
 		case 0xbe:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->x = arg;
 			cpu->PC++;
@@ -1437,7 +1501,9 @@ void ldy(struct CPU *cpu){
 		}
 
 		case 0xbc:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->y = arg;
 			cpu->PC++;
@@ -1553,7 +1619,9 @@ void ora(struct CPU *cpu){
 		}
 		
 		case 0x1d:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			cpu->PC++;
@@ -1561,7 +1629,9 @@ void ora(struct CPU *cpu){
 		}
 		
 		case 0x19:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			cpu->PC++;
@@ -1575,6 +1645,8 @@ void ora(struct CPU *cpu){
 		}
 		case 0x11:{	//indirect,Y
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = cpu->accumulator | arg;
 			break;
@@ -1679,7 +1751,7 @@ void rla(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x33:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal << 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus & 0b00000001));
@@ -1892,7 +1964,7 @@ void rra(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x73:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			preShiftVal = busRead(&(cpu->bus), address);
 			busWrite(&(cpu->bus), address, preShiftVal >> 1);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) | (cpu->processorStatus << 7));
@@ -1996,14 +2068,18 @@ void sbc(struct CPU *cpu){
 		}
 
 		case 0xfd:{	//absolute,X
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->x;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
+			address += cpu->x;
 			val = busRead(&(cpu->bus), address);
 			cpu->PC++;
 			break;
 		}
 		
 		case 0xf9:{	//absolute,Y
-			unsigned short address = absoluteAddress(cpu, cpu->PC) + cpu->y;
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			val = busRead(&(cpu->bus), address);
 			cpu->PC++;
 			break;
@@ -2017,6 +2093,8 @@ void sbc(struct CPU *cpu){
 
 		case 0xf1:{
 			unsigned short address = indirectYAddress(cpu);
+			cpu->extraCycles = isPageCrossed(address, cpu->y);
+			address += cpu->y; 
 			val = busRead(&(cpu->bus), address);
 			break;
 		}
@@ -2112,7 +2190,7 @@ void slo(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x13:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			carryFlag(cpu, busRead(&(cpu->bus), address));
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) << 1);
 			cpu->accumulator |= busRead(&(cpu->bus), address);
@@ -2180,7 +2258,7 @@ void sre(struct CPU *cpu){	//unofficial instruction
 		}
 
 		case 0x53:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			carryFlag(cpu, busRead(&(cpu->bus), address) << 7);
 			busWrite(&(cpu->bus), address, busRead(&(cpu->bus), address) >> 1);
 			cpu->accumulator ^= busRead(&(cpu->bus), address);
@@ -2237,7 +2315,7 @@ void sta(struct CPU *cpu){
 		}
 
 		case 0x91:{	//indirect,Y
-			unsigned short address = indirectYAddress(cpu);
+			unsigned short address = indirectYAddress(cpu) + cpu->y;
 			busWrite(&(cpu->bus), address, cpu->accumulator);
 			break;
 		}
@@ -2935,6 +3013,9 @@ void cpuLoop(struct CPU *cpu){
 			break;
 		}
 	}
+	struct Opcode opCodes[0x100];
+	createOpArray(opCodes);
+	busTick(&(cpu->bus), opCodes[opCode].cycles + cpu->extraCycles);
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){

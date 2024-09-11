@@ -25,3 +25,7 @@ int vramAddrIncAmount(unsigned char ppuController){
 		return 1;
 	}
 }
+
+int isNMIIntOn(unsigned char ppuController){
+	return ppuController & 0b10000000;
+}

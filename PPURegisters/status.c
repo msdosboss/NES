@@ -27,3 +27,11 @@ unsigned char statusRead(unsigned char *status){
 	*status &= 0b01111111;
 	return oldStatus;
 }
+
+void statusVblankOn(unsigned char *status){
+	*status |= 0b10000000;
+}
+
+void statusVblankOff(unsigned char *status){
+	*status &= 0b01111111;
+}

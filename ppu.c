@@ -15,6 +15,9 @@ struct PPU{
 	unsigned char mask;
 	unsigned char scroll;
 	unsigned char dataBuffer;
+
+	int scanLines;
+	int cycles;
 };
 */
 
@@ -24,6 +27,16 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	memset(ppu->vram, 0, sizeof(ppu->vram));
 	memset(ppu->oamData, 0, sizeof(ppu->oamData));
 	ppu->mirrorMode = rom->mirrorMode;
+	ppu->cycles = 0;
+	ppu->scanLines = 0;
+}
+
+int ppuTick(struct PPU *ppu, int cycles){
+	ppu->cycles += cycles;
+	if(ppu->cycles >= 341){
+		ppu->cycles -= 341;
+		ppu->scanLines += 1;
+	}
 }
 
 unsigned char ppuRead(struct PPU *ppu){
@@ -48,7 +61,9 @@ unsigned char ppuRead(struct PPU *ppu){
 		return -1;
 	}
 
-	else if(address >= 0x3f00 && address <= 0x3fff){	//NEED TO IMPLEMENT MIRRORING!!!!
+	else if(address >= 0x3f00 && address <= 0x3fff){
+		address %= 0x20;
+		address += 0x3f00;
 		return ppu->paletteTable[address - 0x3f00];
 	}
 }
@@ -71,7 +86,9 @@ void ppuWrite(struct PPU *ppu, unsigned char data){
 		printf("addr space %x is not suppose to be used!\n", address);
 	}
 
-	else if(address >= 0x3f00 && address < 0x4000){	//NEED TO IMPLEMENT MIRRORING!!!!
+	else if(address >= 0x3f00 && address < 0x4000){
+		address %= 0x20;
+		address += 0x3f00;
 		ppu->paletteTable[addr - 0x3f00] = data;
 	}
 }

@@ -19,9 +19,12 @@ struct PPU{
 	unsigned char mask;
 	unsigned char scroll;
 	unsigned char dataBuffer;
+	int scanLines;
+	int cycles;
 };
 
 void initPPU(struct PPU *ppu, struct Rom *rom);
+int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
 void ppuWrite(struct PPU *ppu, unsigned char data);
 unsigned short mirroredVramAddr(unsigned short address);

@@ -10,3 +10,4 @@
 #define NMIFLAG           0b10000000
 
 int vramAddrIncAmount(unsigned char ppuController);
+int isNMIIntOn(unsigned char ppuController);
