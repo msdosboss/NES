@@ -9,6 +9,27 @@
 	int extraCycles;
 };*/
 
+void nmiInt(struct CPU *cpu){
+	unsigned short index = cpu->PC + 1;	//Pushes the PC on to the stack
+	unsigned short orcaIndex = index;
+	index = index >> 8;
+	push(cpu, (unsigned char)(index));
+	push(cpu, (unsigned char)(orcaIndex));	//pushes the first 8 bits of the address to stack
+
+	unsigned char flag = cpu->processorStatus;
+	flag &= 0b11101111;	//turn off break flag
+	flag |= 0b00100000;	//This bit is always pushed as 1 https://www.nesdev.org/wiki/Status_flags
+
+	push(cpu, flag);
+
+	cpu->processorStatus |= 0b00000100;	//turn on int flag
+
+	busTick(&(cpu->bus), 2);
+
+	cpu->PC = absoluteAddress(cpu, 0xfffa);
+	
+}
+
 void zeroFlag(struct CPU *cpu, unsigned char reg){
 	if(reg == 0){
 		cpu->processorStatus = cpu->processorStatus | 0b00000010;
@@ -1999,7 +2020,7 @@ void rra(struct CPU *cpu){	//unofficial instruction
 
 void rti(struct CPU *cpu){
 	cpu->processorStatus = ((pop(cpu) & 0b11101111) | 0b00100000);
-	cpu->PC = popAbsoluteAddress(cpu);
+	cpu->PC = popAbsoluteAddress(cpu) + 1;
 }
 
 void rts(struct CPU *cpu){
@@ -2452,6 +2473,9 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 }
 
 void cpuLoop(struct CPU *cpu){
+	if(cpu->bus.ppu->nmiInt){
+		nmiInt(cpu);
+	}
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
 	cpu->PC++;
 	switch(opCode){

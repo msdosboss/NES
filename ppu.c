@@ -18,6 +18,8 @@ struct PPU{
 
 	int scanLines;
 	int cycles;
+
+	int nmiInt;
 };
 */
 
@@ -36,7 +38,22 @@ int ppuTick(struct PPU *ppu, int cycles){
 	if(ppu->cycles >= 341){
 		ppu->cycles -= 341;
 		ppu->scanLines += 1;
+
+		if(scanLines == 241){
+			if(isNMIIntOn(ppu->controller)){
+				statusVblankOn(&(ppu->status));
+				ppu->nmiInt = 1;
+			}
+		}
+		if(ppu->scanLines >= 262){
+			ppu->scanLines = 0;
+			ppu->nmiInt = 0;
+			statusVblankOff(&(ppu->status));
+			return 1;
+		}
 	}
+	return 0;
+	
 }
 
 unsigned char ppuRead(struct PPU *ppu){
@@ -118,6 +135,10 @@ unsigned short mirroredVramAddr(unsigned short address){
 void writeToCtrl(struct PPU *ppu, unsigned char data){
 	int beforeNmiStatus = ppu->controller & 0b10000000;
 	ppu->controller = data;
+
+	if(!beforeNmiStatus && (ppu->controller & 0b10000000) && (ppu->status & 0b10000000)){	//checking if the controller register has the vblank flag on and checking if the status register has generate NMI flag on
+		ppu->nmiInt = 1;
+	}
 }
 
 void writeToOamAddr(struct PPU *ppu, unsigned char data){

@@ -102,3 +102,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 		printf("Trying to write to ROM at %x\n", addr);
 	}
 }
+
+busTick(struct Bus *bus, int cycleCount){
+	ppuTick(bus->ppu, cycleCount * 3);
+}

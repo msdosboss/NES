@@ -21,6 +21,7 @@ struct PPU{
 	unsigned char dataBuffer;
 	int scanLines;
 	int cycles;
+	int nmiInt;
 };
 
 void initPPU(struct PPU *ppu, struct Rom *rom);
