@@ -20,6 +20,12 @@ struct Rom{
 	unsigned char mapper;
 	int mirrorMode;
 };
+
+struct PaletteEntry{
+	unsigned char red;
+	unsigned char blue;
+	unsigned char green;
+};
 int instructionCount(char *str);
 unsigned char hexToChar(char *hexVal);
 struct Rom parse(char *str);

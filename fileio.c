@@ -169,7 +169,58 @@ struct Rom nesCartRead(char *fileName){
 	return rom;		
 }
 
+struct PaletteEntry *createPalette(char *fileName, int palleteOffset){
+	struct PaletteEntry *palette = malloc(sizeof(struct PaletteEntry) * 64);
+
+	FILE *file = fopen(fileName, "r");
+
+	if(file == NULL){
+		printf("%s in not a file\n", fileName);
+	}
+
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	if(size != 0x600){
+		printf("file is not valid .pal file");
+	}
+
+	unsigned char *raw = malloc(sizeof(unsigned char) * size); 
+	int i = 0;
+	int ch;
+
+
+	while((ch = fgetc(file)) != EOF){
+		if(i < size){
+			raw[i++] = (unsigned char)ch;
+		}
+	}
+
+	for(int i = 0; i < 64; i++){
+		for(int j = 0; j < 3; j++){
+			switch(j){
+				case 0:
+					palette[i].red = raw[(i + j) * (palleteOffset + 1)];
+					break;
+				case 1:
+					palette[i].blue = raw[(i + j) * (palleteOffset + 1)];
+					break;
+				case 2:
+					palette[i].green = raw[(i + j) * (palleteOffset + 1)];
+					break;
+			}
+		}
+	}
+
+	return palette;
+	
+}
+
 /*int main(){
 	//loadRom("snake.rom");
-	nesCartRead("nesTest.nes");
+	//nesCartRead("nesTest.nes");
+	struct PaletteEntry *palette = createPalette("palette.pal", 0);
+	printf("palette[0].red = %x\n", palette[0].red);
+	printf("palette[55].green = %x\n", palette[55].green);
+	free(palette);
 }*/
