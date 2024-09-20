@@ -34,5 +34,6 @@ int verifyFormat(unsigned char *raw);
 void mirrorMode(struct Rom *rom, unsigned char *raw);
 int trainerFlag(unsigned char *raw);
 struct Rom nesCartRead(char *fileName);
+struct PaletteEntry *createPalette(char *fileName, int palleteOffset);
 
 #endif
