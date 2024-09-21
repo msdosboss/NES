@@ -36,7 +36,7 @@ void rendColor(SDL_Renderer *rend, unsigned char val){
 
 void loadBuffer(struct CPU *cpu, unsigned char *buffer){
 	for(int i = 0; i < ROWS * COLLUMNS; i++){
-		buffer[i] = busRead(&(cpu->bus), 0x200 + i);
+		buffer[i] = busRead(&(cpu->bus), 0x200 + i);	//This cant work with a 256x240 display becuase 256 * 240 = 61440. The bus does not have that much memory
 	}
 }
 
@@ -87,7 +87,7 @@ SDL_Renderer *initRender(SDL_Window *wind){
 int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	/* Main loop */
 	bool running = true, left_pressed = false, right_pressed = false, space_pressed = false;
-	float x_pos = (WIDTH-SIZE)/2, y_pos = (HEIGHT-SIZE)/2, x_change = 0, y_change = 0;
+	float x_pos = (WIDTH-SQUARESIZE)/2, y_pos = (HEIGHT-SQUARESIZE)/2, x_change = 0, y_change = 0;
 	SDL_Rect **rects;
 	rects = malloc(sizeof(SDL_Rect *) * COLLUMNS);
 	for(int i = 0; i < COLLUMNS; i++){
@@ -96,7 +96,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 			rects[i][j] = (SDL_Rect){i * SQUARESIZE, j * SQUARESIZE, SQUARESIZE, SQUARESIZE};
 		}
 	}
-	SDL_Rect rect = {(int) x_pos, (int) y_pos, SIZE, SIZE};
+	SDL_Rect rect = {(int) x_pos, (int) y_pos, SQUARESIZE, SQUARESIZE};
 	SDL_Event event;
 	while (running){
 	/* Process events */
@@ -151,11 +151,14 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	  				break;
 			}
 	}
-	unsigned char buffer[32 * 32];
+	unsigned char buffer[COLLUMNS * ROWS];
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
-		printf("hello world");
+		printf("hello world\n");
+		fflush(stdout);
 		loadBuffer(cpu, buffer);
+		printf("world\n");
+		fflush(stdout);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
 		char *str = malloc(sizeof(char) * 93);
 		struct Opcode opcodes[0x100];
@@ -168,6 +171,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 		bufferFlag = checkBuffer(cpu, buffer);
 		struct timespec req = {0, 50000L};
 		thrd_sleep(&req, NULL);
+		printf("goodbye world\n");
+		fflush(stdout);
 	}
 	else{	
 		//printf("CPU done\n");
@@ -189,8 +194,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 			x_pos = WIDTH - rect.w;
 		if (y_pos <= 0)
 			y_pos = 0;
-			rect.x = (int) x_pos;
-			rect.y = (int) y_pos;
+		rect.x = (int) x_pos;
+		rect.y = (int) y_pos;
 		/* Draw the rectangle */
 		//SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
 		//SDL_RenderFillRect(rend, &rect);
@@ -204,6 +209,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 				else{
 					SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
 				}*/
+				printf("reading from memeory location %x\n", (i * ROWS + j));
+				fflush(stdout);
 				rendColor(rend, busRead(&(cpu->bus), 0x200 + (i * ROWS + j)));
 				SDL_RenderFillRect(rend, &rects[j][i]);
 				//SDL_RenderPresent(rend);
@@ -229,9 +236,8 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-
 	struct CPU cpu = {0};
-	
+
 	cpu.bus.rom = nesCartRead(argv[1]);
 
 	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
