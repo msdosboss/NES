@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "bus.h"
 #include "opcode.h"
-#include "opcode.h"
+//#include "opcode.h"
 
 struct CPU {
 	unsigned short PC;
@@ -20,7 +20,7 @@ struct CPU {
 
 	int extraCycles;
 };
-
+void nmiInt(struct CPU *cpu);
 void zeroFlag(struct CPU *cpu, unsigned char reg);
 void negativeFlag(struct CPU *cpu, unsigned char reg);
 void carryFlag(struct CPU *cpu, unsigned char reg);
@@ -33,7 +33,7 @@ unsigned short indirectAddress(struct CPU *cpu);
 void push(struct CPU *cpu, unsigned char val);
 unsigned char pop(struct CPU *cpu);
 unsigned short popAbsoluteAddress(struct CPU *cpu);
-int isPageCrossed(unsigned short baseAddress, unsigned char reg)
+int isPageCrossed(unsigned short baseAddress, unsigned char reg);
 void adc(struct CPU *cpu);
 void asl(struct CPU *cpu);
 void and(struct CPU *cpu);

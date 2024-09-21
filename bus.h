@@ -7,5 +7,6 @@ struct Bus{
 	struct Rom rom;
 	struct PPU *ppu;
 };
+void busTick(struct Bus *bus, int cycleCount);
 unsigned char busRead(struct Bus *bus, unsigned short addr);
 void busWrite(struct Bus *bus, unsigned short addr, unsigned char data);

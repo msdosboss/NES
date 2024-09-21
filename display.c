@@ -10,13 +10,13 @@
 #include "6502.h"
 #include "fileio.h"
 #include "log.h"
-#define COLLUMNS 32
-#define ROWS 32
-#define WIDTH 640
-#define HEIGHT 640
+#define COLLUMNS 240
+#define ROWS 256
+#define WIDTH 1200
+#define HEIGHT 1280
 #define SIZE 200
 #define FPS 60
-#define SQUARESIZE 20
+#define SQUARESIZE WIDTH/COLLUMNS
 
 void rendColor(SDL_Renderer *rend, unsigned char val){
 	switch(val){

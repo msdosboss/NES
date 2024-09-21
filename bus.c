@@ -103,6 +103,6 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 }
 
-busTick(struct Bus *bus, int cycleCount){
+void busTick(struct Bus *bus, int cycleCount){
 	ppuTick(bus->ppu, cycleCount * 3);
 }

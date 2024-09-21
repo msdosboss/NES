@@ -153,3 +153,4 @@ void writeToOamData(struct PPU *ppu, unsigned char data){
 void writeToScroll(struct PPU *ppu, unsigned char data){
 	ppu->scroll = data;
 }
+

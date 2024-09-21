@@ -23,7 +23,7 @@ struct PPU{
 	int cycles;
 	int nmiInt;
 };
-
+int ppuTick(struct PPU *ppu, int cycles);
 void initPPU(struct PPU *ppu, struct Rom *rom);
 int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
