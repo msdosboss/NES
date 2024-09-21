@@ -6,7 +6,7 @@ void initAddrRegister(struct AddrRegister *addr){
 }
 
 unsigned short getAddrRegister(struct AddrRegister *addr){ 
-	unsigned short fullAddr = ((addr->value[0] << 8) | addr->val[1]);
+	unsigned short fullAddr = ((addr->value[0] << 8) | addr->value[1]);
 	return fullAddr;
 }
 

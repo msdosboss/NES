@@ -13,7 +13,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 		return bus->prgRam[addr];
 	}
 
-	else if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || 0x2006 || 0x4014){
+	else if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || addr == 0x2006 || addr == 0x4014){
 		printf("Reading from write only PPU memory at %x\n", addr);
 		return 0;
 	}
@@ -23,7 +23,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr == 0x2004){
-		return bus->ppu->oamData[bus->ppu->oamAddr]
+		return bus->ppu->oamData[bus->ppu->oamAddr];
 	}
 
 	else if(addr == 0x2007){
@@ -57,7 +57,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	else if(addr == 0x2000){
-		writeToCtrl(data);
+		writeToCtrl(bus->ppu, data);
 	}
 
 	else if(addr == 0x2001){
@@ -85,7 +85,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	else if(addr == 0x2007){
-		ppuWrite(bus-ppu, data);
+		ppuWrite(bus->ppu, data);
 	}
 
 	else if(addr >= 0x2008 && addr < 0x4000){

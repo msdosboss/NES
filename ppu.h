@@ -1,10 +1,13 @@
+#ifndef PPU_H
+#define PPU_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "fileio.h"
 #include "PPURegisters/addr.h"
 #include "PPURegisters/controller.h"
 #include "PPURegisters/mask.h"
-#include "PPURegisters/status.c"
+#include "PPURegisters/status.h"
 
 struct PPU{
 	unsigned char *chrRom;
@@ -23,13 +26,14 @@ struct PPU{
 	int cycles;
 	int nmiInt;
 };
-int ppuTick(struct PPU *ppu, int cycles);
 void initPPU(struct PPU *ppu, struct Rom *rom);
 int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
 void ppuWrite(struct PPU *ppu, unsigned char data);
-unsigned short mirroredVramAddr(unsigned short address);
+unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address);
 void writeToCtrl(struct PPU *ppu, unsigned char data);
 void writeToOamAddr(struct PPU *ppu, unsigned char data);
 void writeToOamData(struct PPU *ppu, unsigned char data);
 void writeToScroll(struct PPU *ppu, unsigned char data);
+
+#endif

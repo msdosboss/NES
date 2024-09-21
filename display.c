@@ -154,6 +154,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	unsigned char buffer[32 * 32];
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
+		printf("hello world");
 		loadBuffer(cpu, buffer);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
 		char *str = malloc(sizeof(char) * 93);

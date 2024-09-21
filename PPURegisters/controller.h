@@ -1,3 +1,6 @@
+#ifndef CONTROLLER_H
+#define CONTROLLER_H
+
 #include <stdlib.h>
 
 #define NAMETABLE1        0b00000001
@@ -11,3 +14,5 @@
 
 int vramAddrIncAmount(unsigned char ppuController);
 int isNMIIntOn(unsigned char ppuController);
+
+#endif

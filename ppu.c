@@ -39,7 +39,7 @@ int ppuTick(struct PPU *ppu, int cycles){
 		ppu->cycles -= 341;
 		ppu->scanLines += 1;
 
-		if(scanLines == 241){
+		if(ppu->scanLines == 241){
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
 				ppu->nmiInt = 1;
@@ -57,31 +57,31 @@ int ppuTick(struct PPU *ppu, int cycles){
 }
 
 unsigned char ppuRead(struct PPU *ppu){
-	unsigned short address = getAddrRegister(&(ppu->addr));
+	unsigned short addr = getAddrRegister(&(ppu->addr));
 	for(int i = 0; i < vramAddrIncAmount(ppu->controller); i++){
 		incrementAddrRegister(&(ppu->addr));
 	}
-	if(address >= 0x0 && address <= 0x1fff){
+	if(addr >= 0x0 && addr <= 0x1fff){
 		unsigned char data = ppu->dataBuffer;
-		ppu->dataBuffer = chrRom[addr];
+		ppu->dataBuffer = ppu->chrRom[addr];
 		return data;
 	}
 
-	else if(address >= 0x2000 && address <= 0x2fff){
+	else if(addr >= 0x2000 && addr <= 0x2fff){
 		unsigned char data = ppu->dataBuffer;
 		ppu->dataBuffer = ppu->vram[addr - 0x2000];	//NEED TO IMPLEMENT MIRRORING!!!!
 		return data;
 	}
 
-	else if(address >= 0x3000 && addresss <= 0x3eff){
-		printf("addr space %x is not suppose to be used!\n", address);
+	else if(addr >= 0x3000 && addr <= 0x3eff){
+		printf("addr space %x is not suppose to be used!\n", addr);
 		return -1;
 	}
 
-	else if(address >= 0x3f00 && address <= 0x3fff){
-		address %= 0x20;
-		address += 0x3f00;
-		return ppu->paletteTable[address - 0x3f00];
+	else if(addr >= 0x3f00 && addr <= 0x3fff){
+		addr %= 0x20;
+		addr += 0x3f00;
+		return ppu->paletteTable[addr - 0x3f00];
 	}
 }
 
@@ -95,25 +95,25 @@ void ppuWrite(struct PPU *ppu, unsigned char data){
 		printf("Trying to write to ROM at address %x", address);
 	}
 
-	else if(address >= 0x2000 && < 0x2fff){
-		ppu->vram[addr - 0x2000] = data;
+	else if(address >= 0x2000 && address < 0x2fff){
+		ppu->vram[address - 0x2000] = data;
 	}
 
-	else if(address >= 0x3000 && addresss < 0x3f00){
+	else if(address >= 0x3000 && address < 0x3f00){
 		printf("addr space %x is not suppose to be used!\n", address);
 	}
 
 	else if(address >= 0x3f00 && address < 0x4000){
 		address %= 0x20;
 		address += 0x3f00;
-		ppu->paletteTable[addr - 0x3f00] = data;
+		ppu->paletteTable[address - 0x3f00] = data;
 	}
 }
 
-unsigned short mirroredVramAddr(unsigned short address){
+unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address){
 	unsigned short mirroredVram = address & 0b10111111111111;	//mirror down 0x3000-0x3eff to 0x2000-0x20eff
 	mirroredVram -= 0x2000;
-	unsigned short nameTable = mirroredVram / 0x400	//Name table index 
+	unsigned short nameTable = mirroredVram / 0x400;	//Name table index 
 
 	if(ppu->mirrorMode == HORIZONTAL){
 		if(nameTable == 1 || nameTable == 2){

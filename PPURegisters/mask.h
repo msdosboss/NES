@@ -1,3 +1,6 @@
+#ifndef MASK_H
+#define MASK_H
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -14,3 +17,12 @@
 #define EMPHASIZERED       0b00100000
 #define EMPHASIZEGREEN     0b01000000
 #define EMPHASIZEBLUE      0b10000000
+
+int isGreyScaleOn(unsigned char mask);
+int isBackgroundRendOn(unsigned char mask);
+int isSpriteRendOn(unsigned char mask);
+int isLeftBackgroundRendOn(unsigned char mask);
+int isLeftSpriteRendOn(unsigned char mask);
+int colorMode(unsigned char mask);
+
+#endif

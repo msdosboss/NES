@@ -423,7 +423,7 @@ void axs(struct CPU *cpu){
 void bcc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -432,7 +432,7 @@ void bcc(struct CPU *cpu){
 void bcs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -441,7 +441,7 @@ void bcs(struct CPU *cpu){
 void beq(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -475,7 +475,7 @@ void bit(struct CPU *cpu){
 void bmi(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -484,7 +484,7 @@ void bmi(struct CPU *cpu){
 void bne(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -493,7 +493,7 @@ void bne(struct CPU *cpu){
 void bpl(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -502,7 +502,7 @@ void bpl(struct CPU *cpu){
 void bvc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -511,7 +511,7 @@ void bvc(struct CPU *cpu){
 void bvs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, char(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
