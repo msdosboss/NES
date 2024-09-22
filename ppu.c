@@ -153,3 +153,22 @@ void writeToOamData(struct PPU *ppu, unsigned char data){
 void writeToScroll(struct PPU *ppu, unsigned char data){
 	ppu->scroll = data;
 }
+
+void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry){
+	pixel->red = paletteEntry.red;
+	pixel->blue = paletteEntry.blue;
+	pixel->green = paletteEntry.green;
+}
+
+void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
+	bank *= 0x1000;
+	for(int i = 0; i <= 0xfff; i += 0x10){
+		for(int j = 0; j < 0x8; j++){
+			unsigned char first = ppu->chrRom[i + j + bank];
+			unsigned char second = ppu->chrRom[i + j + bank + 8];
+			for(int k = 7; k >= 0; k--){
+				frame->tiles[i / 0x100][]
+			}
+		}
+	}
+}

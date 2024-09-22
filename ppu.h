@@ -26,6 +26,21 @@ struct PPU{
 	int cycles;
 	int nmiInt;
 };
+
+struct Pixel{
+	unsigned char red;
+	unsigned char blue;
+	unsigned char green;
+};
+
+struct Tile{
+	struct Pixel pixels[8][8];
+};
+
+struct Frame{
+	struct Tile tiles[30][32];
+};
+
 void initPPU(struct PPU *ppu, struct Rom *rom);
 int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
@@ -35,5 +50,6 @@ void writeToCtrl(struct PPU *ppu, unsigned char data);
 void writeToOamAddr(struct PPU *ppu, unsigned char data);
 void writeToOamData(struct PPU *ppu, unsigned char data);
 void writeToScroll(struct PPU *ppu, unsigned char data);
-
+void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry);
+void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank);
 #endif

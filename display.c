@@ -10,10 +10,10 @@
 #include "6502.h"
 #include "fileio.h"
 #include "log.h"
-#define COLLUMNS 240
-#define ROWS 256
-#define WIDTH 1200
-#define HEIGHT 1280
+#define COLLUMNS 256
+#define ROWS 240
+#define WIDTH 1280
+#define HEIGHT 1200
 #define SIZE 200
 #define FPS 60
 #define SQUARESIZE WIDTH/COLLUMNS
