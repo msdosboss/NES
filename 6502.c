@@ -2020,7 +2020,8 @@ void rra(struct CPU *cpu){	//unofficial instruction
 
 void rti(struct CPU *cpu){
 	cpu->processorStatus = ((pop(cpu) & 0b11101111) | 0b00100000);
-	cpu->PC = popAbsoluteAddress(cpu) + 1;
+	//cpu->PC = popAbsoluteAddress(cpu) + 1;
+	cpu->PC = popAbsoluteAddress(cpu);
 }
 
 void rts(struct CPU *cpu){
@@ -3046,6 +3047,10 @@ void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	cpu->PC = 0xc000;
 
 	cpu->stackPointer = &(cpu->bus.prgRam[0x1fd]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down. I guess it starts at fd becuase that what it is in nesTest.log
+
+	cpu->bus.ppu = malloc(sizeof(struct PPU));
+
+	initPPU(cpu->bus.ppu, &(cpu->bus.rom));	
 
 	//loadInstructions(cpu, instructions, instructionsLen);
 

@@ -27,14 +27,9 @@ struct PPU{
 	int nmiInt;
 };
 
-struct Pixel{
-	unsigned char red;
-	unsigned char blue;
-	unsigned char green;
-};
 
 struct Tile{
-	struct Pixel pixels[8][8];
+	unsigned char pixels[8][8];
 };
 
 struct Frame{
@@ -50,6 +45,7 @@ void writeToCtrl(struct PPU *ppu, unsigned char data);
 void writeToOamAddr(struct PPU *ppu, unsigned char data);
 void writeToOamData(struct PPU *ppu, unsigned char data);
 void writeToScroll(struct PPU *ppu, unsigned char data);
-void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry);
+//void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry);
 void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank);
+struct Frame createFrame();
 #endif

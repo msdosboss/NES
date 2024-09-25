@@ -210,7 +210,7 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 		}
 		case INDIRECTY:{
 			cpu->PC++;
-			sprintf(&(str[i]), "($%02x),Y = %04x @ %04x = %02x", busRead(&(cpu->bus), cpu->PC), rollOverAbsoluteAddress(cpu, busRead(&(cpu->bus), cpu->PC)), indirectYAddress(cpu), busRead(&(cpu->bus), indirectYAddress(cpu)));
+			sprintf(&(str[i]), "($%02x),Y = %04x @ %04x = %02x", busRead(&(cpu->bus), cpu->PC), rollOverAbsoluteAddress(cpu, busRead(&(cpu->bus), cpu->PC)), (short)(indirectYAddress(cpu) + cpu->y), busRead(&(cpu->bus), (short)(indirectYAddress(cpu) + cpu->y)));
 			for(int j = i; j < i + 26; j++){
 				str[j] = upper(str[j]);
 			}

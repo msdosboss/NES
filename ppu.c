@@ -154,21 +154,57 @@ void writeToScroll(struct PPU *ppu, unsigned char data){
 	ppu->scroll = data;
 }
 
-void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry){
+/*void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry){
 	pixel->red = paletteEntry.red;
 	pixel->blue = paletteEntry.blue;
 	pixel->green = paletteEntry.green;
-}
+}*/
 
 void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 	bank *= 0x1000;
-	for(int i = 0; i <= 0xfff; i += 0x10){
+	int hor = 0;
+	int ver = 0;
+	for(int i = 0; i <= 0x1000; i += 0x10){
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = ppu->chrRom[i + j + bank];
 			unsigned char second = ppu->chrRom[i + j + bank + 8];
 			for(int k = 7; k >= 0; k--){
-				frame->tiles[i / 0x100][]
+				if(((first & 0b00000001) | (second & 0b00000001)) == 0){
+					frame->tiles[ver][hor].pixels[j][k] = 0;
+				}
+				else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
+					frame->tiles[ver][hor].pixels[j][k] = 1;
+				}
+				else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
+					frame->tiles[ver][hor].pixels[j][k] = 2;
+				}
+				else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
+					frame->tiles[ver][hor].pixels[j][k] = 3;
+				}
+				first >>= 1;
+				second >>= 1;
+			}
+		}
+		if(hor == 32){
+			hor = 0;
+			ver++;
+		}
+		else{
+			hor++;
+		}
+	}
+}
+
+struct Frame createFrame(){
+	struct Frame frame;
+	for(int i = 0; i < 30; i++){
+		for(int j = 0; j < 32; j++){
+			for(int ii = 0; ii < 8; ii++){
+				for(int jj = 0; jj < 8; jj++){
+					frame.tiles[i][j].pixels[ii][jj] = 5;
+				}
 			}
 		}
 	}
+	return frame;
 }

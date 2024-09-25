@@ -18,34 +18,54 @@
 #define FPS 60
 #define SQUARESIZE WIDTH/COLLUMNS
 
-void rendColor(SDL_Renderer *rend, unsigned char val){
+void rendColor(SDL_Renderer *rend, unsigned char val, struct PaletteEntry *palette){
 	switch(val){
 		case 0x00:
-			SDL_SetRenderDrawColor(rend, 0, 0, 0, 127);
+			SDL_SetRenderDrawColor(rend, palette[0x01].red, palette[0x01].blue, palette[0x01].green, 127);
 			break;
 
 		case 0x01:
-			SDL_SetRenderDrawColor(rend, 255, 255, 255, 127);
+			SDL_SetRenderDrawColor(rend, palette[0x23].red, palette[0x23].blue, palette[0x23].green, 127);
+			break;
+
+		case 0x02:
+			SDL_SetRenderDrawColor(rend, palette[0x27].red, palette[0x27].blue, palette[0x27].green, 127);
+			break;
+
+		case 0x03:
+			SDL_SetRenderDrawColor(rend, palette[0x30].red, palette[0x30].blue, palette[0x30].green, 127);
 			break;
 		
 		default:
-			SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
+			SDL_SetRenderDrawColor(rend, 0, 0, 0, 127);
 			break;
 	}
 }
 
-void loadBuffer(struct CPU *cpu, unsigned char *buffer){
-	for(int i = 0; i < ROWS * COLLUMNS; i++){
-		buffer[i] = busRead(&(cpu->bus), 0x200 + i);	//This cant work with a 256x240 display becuase 256 * 240 = 61440. The bus does not have that much memory
+void loadBuffer(struct Frame *frame, unsigned char **buffer){
+	for(int i = 0; i < COLLUMNS; i++){
+		for(int j = 0; j < ROWS; j++){
+			buffer[j][i] = frame->tiles[j / 8][i / 8].pixels[j % 8][i % 8];
+		}
 	}
+	/*for(int i = 0; i < ROWS * COLLUMNS; i++){
+		buffer[i] = busRead(&(cpu->bus), 0x200 + i);	//This cant work with a 256x240 display becuase 256 * 240 = 61440. The bus does not have that much memory
+	}*/
 }
 
-int checkBuffer(struct CPU *cpu, unsigned char *buffer){
-	for(int i = 0; i < ROWS * COLLUMNS; i++){
+int checkBuffer(struct Frame *frame, unsigned char **buffer){
+	for(int i = 0; i < COLLUMNS; i++){
+		for(int j = 0; j < ROWS; j++){
+			if(buffer[j][i] != frame->tiles[j / 8][i / 8].pixels[j % 8][i % 8]){
+				return 1;
+			}
+		}
+	}
+	/*for(int i = 0; i < ROWS * COLLUMNS; i++){
 		if(buffer[i] != busRead(&(cpu->bus), 0x200 + i)){
 			return 1;
 		}
-	}
+	}*/
 	return 0;
 }
 
@@ -84,7 +104,7 @@ SDL_Renderer *initRender(SDL_Window *wind){
 	return rend;
 }
 
-int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
+int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Frame *frame, struct PaletteEntry *palette, unsigned char **buffer){
 	/* Main loop */
 	bool running = true, left_pressed = false, right_pressed = false, space_pressed = false;
 	float x_pos = (WIDTH-SQUARESIZE)/2, y_pos = (HEIGHT-SQUARESIZE)/2, x_change = 0, y_change = 0;
@@ -151,14 +171,10 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 	  				break;
 			}
 	}
-	unsigned char buffer[COLLUMNS * ROWS];
+	//unsigned char buffer[ROWS][COLLUMNS];
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
-		printf("hello world\n");
-		fflush(stdout);
-		loadBuffer(cpu, buffer);
-		printf("world\n");
-		fflush(stdout);
+		bufferFlag = checkBuffer(frame, buffer);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
 		char *str = malloc(sizeof(char) * 93);
 		struct Opcode opcodes[0x100];
@@ -166,13 +182,10 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 		cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
 		printf("%s\n", str);
 		unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
-
 		cpuLoop(cpu);
-		bufferFlag = checkBuffer(cpu, buffer);
+		loadBuffer(frame, buffer);
 		struct timespec req = {0, 50000L};
 		thrd_sleep(&req, NULL);
-		printf("goodbye world\n");
-		fflush(stdout);
 	}
 	else{	
 		//printf("CPU done\n");
@@ -200,7 +213,6 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 		//SDL_SetRenderDrawColor(rend, 255, 0, 255, 127);
 		//SDL_RenderFillRect(rend, &rect);
 		for(int i = 0; i < COLLUMNS; i++){
-			fflush(stdout);
 			for(int j = 0; j < ROWS; j++){
 				
 				/*if(((j + 1) % 2 != 0 && (i + 1) % 2 != 0) || ((j + 1) % 2 == 0 && (i + 1) % 2 == 0)){
@@ -209,9 +221,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 				else{
 					SDL_SetRenderDrawColor(rend, 255, 0, 0, 127);
 				}*/
-				printf("reading from memeory location %x\n", (i * ROWS + j));
-				fflush(stdout);
-				rendColor(rend, busRead(&(cpu->bus), 0x200 + (i * ROWS + j)));
+				//rendColor(rend, busRead(&(cpu->bus), 0x200 + (i * ROWS + j)));
+				rendColor(rend, frame->tiles[j / 8][i / 8].pixels[j % 8][i % 8], palette);
 				SDL_RenderFillRect(rend, &rects[j][i]);
 				//SDL_RenderPresent(rend);
 			}
@@ -229,6 +240,16 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu){
 
 }
 
+unsigned char **initBuffer(){
+	unsigned char **buffer;
+	buffer = malloc(sizeof(unsigned char *) * ROWS);
+	for(int i = 0; i < ROWS; i++){
+		buffer[i] = malloc(sizeof(unsigned char) * COLLUMNS);
+		memset(buffer[i], 0, sizeof(unsigned char) * COLLUMNS);
+	}
+	return buffer;
+}
+
 int main(int argc, char* argv[]){
 
 	if(argc < 2){
@@ -242,9 +263,17 @@ int main(int argc, char* argv[]){
 
 	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
 
+	unsigned char **buffer = initBuffer();
+
+	struct Frame frame = createFrame();
+
+	struct PaletteEntry *palette = createPalette("palette.pal", 0);
+
+	parseChrRom(cpu.bus.ppu, &frame, 0);
+
 	SDL_Window *wind = initDisplay();
 
 	SDL_Renderer *rend = initRender(wind);
 
-	displayLoop(wind, rend, &cpu);
+	displayLoop(wind, rend, &cpu, &frame, palette, buffer);
 }
