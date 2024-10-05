@@ -40,14 +40,13 @@ int ppuTick(struct PPU *ppu, int cycles){
 		ppu->scanLines += 1;
 
 
-		printf("scanLines = %d\n", scanLines);
+		printf("scanLines = %d\n", ppu->scanLines);
 		if(ppu->scanLines == 241){
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
 				ppu->nmiInt = 1;
 			}
 		}
-		printf("")
 		if(ppu->scanLines >= 262){
 			ppu->scanLines = 0;
 			ppu->nmiInt = 0;
