@@ -28,7 +28,7 @@ void nmiInt(struct CPU *cpu){
 
 	cpu->PC = absoluteAddress(cpu, 0xfffa);
 
-	//cpu->bus.ppu->nmiInt = 0;
+	cpu->bus.ppu->nmiInt = 0;
 	
 }
 
