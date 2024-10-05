@@ -27,6 +27,8 @@ void nmiInt(struct CPU *cpu){
 	busTick(&(cpu->bus), 2);
 
 	cpu->PC = absoluteAddress(cpu, 0xfffa);
+
+	//cpu->bus.ppu->nmiInt = 0;
 	
 }
 
@@ -2433,6 +2435,7 @@ void tay(struct CPU *cpu){
 }
 
 void txa(struct CPU *cpu){
+
 	cpu->accumulator = cpu->x;
 		
 	zeroFlag(cpu, cpu->accumulator);
@@ -2475,6 +2478,7 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 
 void cpuLoop(struct CPU *cpu){
 	if(cpu->bus.ppu->nmiInt){
+		printf("NMI int!!!\n");
 		nmiInt(cpu);
 	}
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC);

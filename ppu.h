@@ -47,5 +47,6 @@ void writeToOamData(struct PPU *ppu, unsigned char data);
 void writeToScroll(struct PPU *ppu, unsigned char data);
 //void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry);
 void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank);
+void parseVram(struct PPU *ppu, struct Frame *frame);
 struct Frame createFrame();
 #endif
