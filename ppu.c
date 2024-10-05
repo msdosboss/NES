@@ -39,12 +39,15 @@ int ppuTick(struct PPU *ppu, int cycles){
 		ppu->cycles -= 341;
 		ppu->scanLines += 1;
 
+
+		printf("scanLines = %d\n", scanLines);
 		if(ppu->scanLines == 241){
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
 				ppu->nmiInt = 1;
 			}
 		}
+		printf("")
 		if(ppu->scanLines >= 262){
 			ppu->scanLines = 0;
 			ppu->nmiInt = 0;
@@ -191,6 +194,35 @@ void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 		}
 		else{
 			hor++;
+		}
+	}
+}
+
+void parseVram(struct PPU *ppu, struct Frame *frame){
+	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
+	for(int i = 0; i <= 0x1000; i += 0x10){
+		int hor = i % 32;
+		int ver = i / 32;
+		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
+		for(int j = 0; j < 0x8; j++){
+			unsigned char first = tile[j];
+			unsigned char second = tile[j + 8];
+			for(int k = 7; k >= 0; k--){
+				if(((first & 0b00000001) | (second & 0b00000001)) == 0){
+					frame->tiles[ver][hor].pixels[j][k] = 0;
+				}
+				else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
+					frame->tiles[ver][hor].pixels[j][k] = 1;
+				}
+				else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
+					frame->tiles[ver][hor].pixels[j][k] = 2;
+				}
+				else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
+					frame->tiles[ver][hor].pixels[j][k] = 3;
+				}
+				first >>= 1;
+				second >>= 1;
+			}
 		}
 	}
 }

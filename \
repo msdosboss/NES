@@ -182,18 +182,11 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
 		printf("%s\n", str);
 		unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
-		int beforeNMI = cpu->bus.ppu->nmiInt;
 		cpuLoop(cpu);
-		int afterNMI = cpu->bus.ppu->nmiInt;
-		printf("beforeNMI = %d and afterNMI = %d\n", beforeNMI, afterNMI);
-		if(beforeNMI != afterNMI){
-			printf("hello world\n");
-			parseVram(cpu->bus.ppu, frame);
-			cpu->bus.ppu->nmiInt = 0;
-		}
 		loadBuffer(frame, buffer);
 		struct timespec req = {0, 50000L};
 		thrd_sleep(&req, NULL);
+		printf("Hello Gragle");
 	}
 	else{	
 		//printf("CPU done\n");
@@ -231,7 +224,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 				}*/
 				//rendColor(rend, busRead(&(cpu->bus), 0x200 + (i * ROWS + j)));
 				rendColor(rend, frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8], palette);
-				SDL_RenderFillRect(rend, &rects[j][i]);
+				SDL_RenderFillRect(rend, &rects[i][j]);
 				//SDL_RenderPresent(rend);
 			}
 		}
@@ -277,7 +270,7 @@ int main(int argc, char* argv[]){
 
 	struct PaletteEntry *palette = createPalette("palette.pal", 0);
 
-	parseChrRom(cpu.bus.ppu, &frame, 1);
+	parseChrRom(cpu.bus.ppu, &frame, 0);
 
 	SDL_Window *wind = initDisplay();
 
