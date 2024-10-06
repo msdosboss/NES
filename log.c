@@ -155,7 +155,12 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			}
 			else{
 				str[i++] = '$';
-				sprintf(&(str[i]), "%04x = %02x", absoluteAddress(cpu, cpu->PC + 1), busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1)));
+				if(absoluteAddress(cpu, cpu->PC + 1) != 0x2002){
+					sprintf(&(str[i]), "%04x = %02x", absoluteAddress(cpu, cpu->PC + 1), busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1)));
+				}
+				else{
+					sprintf(&(str[i]), "%04x = %02x", absoluteAddress(cpu, cpu->PC + 1), cpu->bus.ppu->status);	//when status is read from the bus it turns off the last bit, but that cant be done when logging so I have to make this work around
+				}
 				for(int j = 0; j < 9; j++){
 					str[i + j] = upper(str[i + j]);
 				}
@@ -170,7 +175,14 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 		case ABSOLUTEX:{
 			unsigned short address = absoluteAddress(cpu, cpu->PC + 1) + cpu->x;
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x, busRead(&(cpu->bus), address));
+			if(address != 0x2002){
+				sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x, busRead(&(cpu->bus), address));
+			}
+
+			else{
+				sprintf(&(str[i]), "%04x,X @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), absoluteAddress(cpu, cpu->PC + 1) + cpu->x, cpu->bus.ppu->status);
+			}
+
 			for(int j = i; j < i + 18; j++){
 				str[j] = upper(str[j]);
 			}
@@ -183,7 +195,14 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 		}
 		case ABSOLUTEY:{
 			str[i++] = '$';
-			sprintf(&(str[i]), "%04x,Y @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), ((absoluteAddress(cpu, cpu->PC + 1) + cpu->y) & 0xffff), busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1) + cpu->y));
+			if(((absoluteAddress(cpu, cpu->PC + 1) + cpu->y) & 0xffff) != 0x2002){
+				sprintf(&(str[i]), "%04x,Y @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), ((absoluteAddress(cpu, cpu->PC + 1) + cpu->y) & 0xffff), busRead(&(cpu->bus), absoluteAddress(cpu, cpu->PC + 1) + cpu->y));
+			}
+
+			else{
+				sprintf(&(str[i]), "%04x,Y @ %04x = %02x", absoluteAddress(cpu, cpu->PC + 1), ((absoluteAddress(cpu, cpu->PC + 1) + cpu->y) & 0xffff), cpu->bus.ppu->status);
+			}
+
 			for(int j = 0; j < 18; j++){
 				str[i + j] = upper(str[i + j]);
 			}
