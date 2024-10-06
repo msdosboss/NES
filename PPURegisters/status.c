@@ -35,3 +35,11 @@ void statusVblankOn(unsigned char *status){
 void statusVblankOff(unsigned char *status){
 	*status &= 0b01111111;
 }
+
+void spriteZeroHitOn(unsigned char *status){
+	*status |= 0b01000000;
+}
+
+void spriteZeroHitOff(unsigned char *status){
+	*status &= 0b10111111;
+}

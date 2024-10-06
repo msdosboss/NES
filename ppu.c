@@ -40,6 +40,9 @@ int ppuTick(struct PPU *ppu, int cycles){
 		ppu->scanLines += 1;
 
 		if(ppu->scanLines == 241){
+			statusVblankOn(&(ppu->status));
+			spriteZeroHitOff(&(ppu->status));
+			printf("ppu->status = %b\n", ppu->status); 
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
 				ppu->nmiInt = 1;
