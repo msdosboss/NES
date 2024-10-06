@@ -95,7 +95,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	else if(addr >= 0x4000 && addr < 0x401f){	
-		printf("APU not supported yet");
+		printf("APU not supported yet\n");
 	}
 
 	else if(addr >= 0x8000 && addr <= 0x10000){

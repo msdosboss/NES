@@ -185,11 +185,10 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		int beforeNMI = cpu->bus.ppu->nmiInt;
 		cpuLoop(cpu);
 		int afterNMI = cpu->bus.ppu->nmiInt;
-		printf("beforeNMI = %d and afterNMI = %d\n", beforeNMI, afterNMI);
 		if(beforeNMI != afterNMI){
-			printf("hello world\n");
 			parseVram(cpu->bus.ppu, frame);
-			cpu->bus.ppu->nmiInt = 0;
+			bufferFlag = 1;
+			//cpu->bus.ppu->nmiInt = 0;
 		}
 		loadBuffer(frame, buffer);
 		struct timespec req = {0, 50000L};
