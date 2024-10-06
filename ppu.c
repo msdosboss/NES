@@ -39,8 +39,6 @@ int ppuTick(struct PPU *ppu, int cycles){
 		ppu->cycles -= 341;
 		ppu->scanLines += 1;
 
-
-		printf("scanLines = %d\n", ppu->scanLines);
 		if(ppu->scanLines == 241){
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
@@ -199,10 +197,11 @@ void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 
 void parseVram(struct PPU *ppu, struct Frame *frame){
 	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
-	for(int i = 0; i <= 0x1000; i += 0x10){
+	for(int i = 0; i < 0x3c0; i++){
 		int hor = i % 32;
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
+		printf("ppu->vram[i] = %x\n", ppu->vram[i]);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
 			unsigned char second = tile[j + 8];

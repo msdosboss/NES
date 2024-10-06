@@ -10,12 +10,13 @@
 };*/
 
 void nmiInt(struct CPU *cpu){
-	unsigned short index = cpu->PC + 1;	//Pushes the PC on to the stack
+	unsigned short index = cpu->PC;	//Pushes the PC on to the stack
+	//unsigned short index = cpu->PC + 1;	//Pushes the PC on to the stack
 	unsigned short orcaIndex = index;
 	index = index >> 8;
 	push(cpu, (unsigned char)(index));
 	push(cpu, (unsigned char)(orcaIndex));	//pushes the first 8 bits of the address to stack
-
+	
 	unsigned char flag = cpu->processorStatus;
 	flag &= 0b11101111;	//turn off break flag
 	flag |= 0b00100000;	//This bit is always pushed as 1 https://www.nesdev.org/wiki/Status_flags
@@ -3048,7 +3049,9 @@ void cpuLoop(struct CPU *cpu){
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
-	cpu->PC = 0xc000;
+	//cpu->PC = 0xc000;
+
+	cpu->PC = absoluteAddress(cpu, 0xfffc);
 
 	cpu->stackPointer = &(cpu->bus.prgRam[0x1fd]);	//stackPointer goes from [0x100-0x1ff] starting at the top and working its way down. I guess it starts at fd becuase that what it is in nesTest.log
 
