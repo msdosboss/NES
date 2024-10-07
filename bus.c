@@ -14,7 +14,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || addr == 0x2006 || addr == 0x4014){
-		printf("Reading from write only PPU memory at %x\n", addr);
+		//printf("Reading from write only PPU memory at %x\n", addr);
 		return 0;
 	}
 
@@ -37,7 +37,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr >= 0x4000 && addr < 0x401f){	
-		printf("APU not supported yet");
+		//printf("APU not supported yet");
 		return 0;
 	}
 
@@ -65,7 +65,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	else if(addr == 0x2002){
-		printf("trying to write to status register, but status register is read only\n");
+		//printf("trying to write to status register, but status register is read only\n");
 	}
 
 	else if(addr == 0x2003){
@@ -95,7 +95,7 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 	}
 
 	else if(addr >= 0x4000 && addr < 0x401f){	
-		printf("APU not supported yet\n");
+		//printf("APU not supported yet\n");
 	}
 
 	else if(addr >= 0x8000 && addr <= 0x10000){
