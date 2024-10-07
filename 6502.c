@@ -1384,7 +1384,6 @@ void lda(struct CPU *cpu){
 			unsigned short address = absoluteAddress(cpu, cpu->PC);
 			arg = busRead(&(cpu->bus), address);
 			cpu->accumulator = arg;
-			printf("cpu->accumulator = %x\n", cpu->accumulator);
 			cpu->PC++;
 			break;
 		}
