@@ -253,7 +253,7 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 			i += 23;
 		}
 	}
-	sprintf(&(str[i]), "A:%02x X:%02x Y:%02x P:%02x SP:%02x", cpu->accumulator, cpu->x, cpu->y, cpu->processorStatus, (cpu->stackPointer - cpu->bus.prgRam) - 0x100);
+	sprintf(&(str[i]), "A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%03d SL:%d", cpu->accumulator, cpu->x, cpu->y, cpu->processorStatus, (cpu->stackPointer - cpu->bus.prgRam) - 0x100, cpu->bus.ppu->cycles, cpu->bus.ppu->scanLines);
 	for(int j = i; j < i + 25; j++){
 		str[j] = upper(str[j]);
 	}
