@@ -191,13 +191,12 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 			//cpu->bus.ppu->nmiInt = 0;
 		}
 		loadBuffer(frame, buffer);
-		struct timespec req = {0, 50000L};
-		thrd_sleep(&req, NULL);
+		//struct timespec req = {0, 50000L};
+		//thrd_sleep(&req, NULL);
 	}
 	else{	
 		//printf("CPU done\n");
 	}
-
 
 	if(bufferFlag){	//check if buff changed
 		/* Clear screen */
@@ -276,7 +275,7 @@ int main(int argc, char* argv[]){
 
 	struct PaletteEntry *palette = createPalette("palette.pal", 0);
 
-	parseChrRom(cpu.bus.ppu, &frame, 1);
+	parseChrRom(cpu.bus.ppu, &frame, 0);
 
 	SDL_Window *wind = initDisplay();
 

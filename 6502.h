@@ -33,7 +33,7 @@ unsigned short indirectAddress(struct CPU *cpu);
 void push(struct CPU *cpu, unsigned char val);
 unsigned char pop(struct CPU *cpu);
 unsigned short popAbsoluteAddress(struct CPU *cpu);
-int isPageCrossed(unsigned short baseAddress, unsigned char reg);
+int isPageCrossed(unsigned short baseAddress, char reg);
 void adc(struct CPU *cpu);
 void asl(struct CPU *cpu);
 void and(struct CPU *cpu);

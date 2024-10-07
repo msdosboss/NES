@@ -125,8 +125,8 @@ unsigned short popAbsoluteAddress(struct CPU *cpu){
 	return address;
 }
 
-int isPageCrossed(unsigned short baseAddress, unsigned char reg){
-	if(((baseAddress + reg) & 0xff) <= (baseAddress & 0xff)){	//testing if page cross
+int isPageCrossed(unsigned short baseAddress, char reg){
+	if(((baseAddress + reg + 1) & 0xff00) != (baseAddress & 0xff00)){	//testing if page cross
 		return 1;
 	}
 	return 0;
@@ -2478,12 +2478,13 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 }
 
 void cpuLoop(struct CPU *cpu){
+	cpu->PC++;
 	if(cpu->bus.ppu->nmiInt){
 		printf("NMI int!!!\n");
 		nmiInt(cpu);
 	}
-	unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
-	cpu->PC++;
+	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
+	cpu->extraCycles = 0;
 	switch(opCode){
 		case 0x69:
 		case 0x65:

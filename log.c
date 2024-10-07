@@ -257,6 +257,10 @@ void cycleLog(struct CPU *cpu, struct Opcode opcode, char *str){
 	for(int j = i; j < i + 25; j++){
 		str[j] = upper(str[j]);
 	}
+	i += 30;
+	while(str[i] == '0'){
+		str[i++] = ' ';
+	}
 }
 
 /*int main(){

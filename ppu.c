@@ -30,7 +30,7 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	memset(ppu->oamData, 0, sizeof(ppu->oamData));
 	ppu->mirrorMode = rom->mirrorMode;
 	ppu->cycles = 0;
-	ppu->scanLines = 0;
+	ppu->scanLines = -1;
 }
 
 int ppuTick(struct PPU *ppu, int cycles){
@@ -49,7 +49,7 @@ int ppuTick(struct PPU *ppu, int cycles){
 			}
 		}
 		if(ppu->scanLines >= 262){
-			ppu->scanLines = 0;
+			ppu->scanLines = -1;
 			ppu->nmiInt = 0;
 			statusVblankOff(&(ppu->status));
 			return 1;
@@ -204,7 +204,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		int hor = i % 32;
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
-		printf("ppu->vram[i] = %x\n", ppu->vram[i]);
+		//printf("ppu->vram[i] = %x\n", ppu->vram[i]);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
 			unsigned char second = tile[j + 8];
