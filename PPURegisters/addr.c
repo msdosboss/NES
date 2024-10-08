@@ -38,8 +38,13 @@ void updateAddrRegister(struct AddrRegister *addr, unsigned char data){
 		addr->value[1] = data;
 	}
 
+	addr->hiByte = !addr->hiByte;
+
 	if(getAddrRegister(addr) > 0x3fff){
 		setAddrRegister(addr, getAddrRegister(addr) & 0b11111111111111);	//mirror down addr above 0x3fff
 	}
 }
 
+void addrLatch(struct AddrRegister *addr){
+	addr->hiByte = 1;
+}

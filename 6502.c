@@ -25,9 +25,11 @@ void nmiInt(struct CPU *cpu){
 
 	cpu->processorStatus |= 0b00000100;	//turn on int flag
 
-	busTick(&(cpu->bus), 2);
+	busTick(&(cpu->bus), 7);
 
 	cpu->PC = absoluteAddress(cpu, 0xfffa);
+
+	printf("cpu->PC = %x\n", cpu->PC);
 
 	cpu->bus.ppu->nmiInt = 0;
 	
@@ -125,8 +127,15 @@ unsigned short popAbsoluteAddress(struct CPU *cpu){
 	return address;
 }
 
-int isPageCrossed(unsigned short baseAddress, char reg){
-	if(((baseAddress + reg + 1) & 0xff00) != (baseAddress & 0xff00)){	//testing if page cross
+int isPageCrossedBranch(unsigned short baseAddress, char reg){
+	if(((baseAddress + reg) & 0xff00) != ((baseAddress) & 0xff00)){	//testing if page cross
+		return 1;
+	}
+	return 0;
+}
+
+int isPageCrossed(unsigned short baseAddress, unsigned char reg){
+	if(((baseAddress + reg) & 0xff00) != ((baseAddress) & 0xff00)){	//testing if page cross
 		return 1;
 	}
 	return 0;
@@ -426,7 +435,7 @@ void axs(struct CPU *cpu){
 void bcc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -435,7 +444,7 @@ void bcc(struct CPU *cpu){
 void bcs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000001) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -444,7 +453,7 @@ void bcs(struct CPU *cpu){
 void beq(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -478,7 +487,7 @@ void bit(struct CPU *cpu){
 void bmi(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -487,7 +496,7 @@ void bmi(struct CPU *cpu){
 void bne(struct CPU *cpu){
 	if((cpu->processorStatus & 0b00000010) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -496,7 +505,7 @@ void bne(struct CPU *cpu){
 void bpl(struct CPU *cpu){
 	if((cpu->processorStatus & 0b10000000) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -505,7 +514,7 @@ void bpl(struct CPU *cpu){
 void bvc(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) == 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -514,7 +523,7 @@ void bvc(struct CPU *cpu){
 void bvs(struct CPU *cpu){
 	if((cpu->processorStatus & 0b01000000) != 0){
 		cpu->extraCycles = 1;
-		cpu->extraCycles += isPageCrossed(cpu->PC, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
+		cpu->extraCycles += isPageCrossedBranch(cpu->PC + 1, (char)(busRead(&(cpu->bus), cpu->PC)));	//this might not work becuase the 2nd arg is suppose to be an unsigned char
 		cpu->PC = cpu->PC + (char)busRead(&(cpu->bus), cpu->PC);
 	}
 	cpu->PC++;
@@ -2478,11 +2487,12 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 }
 
 void cpuLoop(struct CPU *cpu){
-	cpu->PC++;
 	if(cpu->bus.ppu->nmiInt){
 		printf("NMI int!!!\n");
 		nmiInt(cpu);
+		return;
 	}
+	cpu->PC++;
 	unsigned char opCode = busRead(&(cpu->bus), cpu->PC - 1);
 	cpu->extraCycles = 0;
 	switch(opCode){
@@ -3003,13 +3013,18 @@ void cpuLoop(struct CPU *cpu){
 			break;
 		}
 		
-		case 0x0c:	//TOP aka triple nop
+		case 0x0c:{	//TOP aka triple nop
+			cpu->PC += 2;
+			break;
+		}
 		case 0x1c:
 		case 0x3c:
 		case 0x5c:
 		case 0x7c:
 		case 0xdc:
 		case 0xfc:{
+			unsigned short address = absoluteAddress(cpu, cpu->PC);
+			cpu->extraCycles = isPageCrossed(address, cpu->x);
 			cpu->PC += 2;
 			break;
 		}
@@ -3047,6 +3062,7 @@ void cpuLoop(struct CPU *cpu){
 	struct Opcode opCodes[0x100];
 	createOpArray(opCodes);
 	busTick(&(cpu->bus), opCodes[opCode].cycles + cpu->extraCycles);
+	cpu->totalCycles += opCodes[opCode].cycles + cpu->extraCycles;
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
@@ -3059,6 +3075,10 @@ void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	cpu->bus.ppu = malloc(sizeof(struct PPU));
 
 	initPPU(cpu->bus.ppu, &(cpu->bus.rom));	
+
+	cpu->totalCycles = 7;	//reset vector requires 7 clock cycles
+
+	busTick(&(cpu->bus), 7);
 
 	//loadInstructions(cpu, instructions, instructionsLen);
 

@@ -22,12 +22,6 @@ VSO. ....
            pre-render line.
 */
 
-unsigned char statusRead(unsigned char *status){
-	unsigned char oldStatus = *status;
-	*status &= 0b01111111;
-	return oldStatus;
-}
-
 void statusVblankOn(unsigned char *status){
 	*status |= 0b10000000;
 }
