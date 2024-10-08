@@ -41,6 +41,7 @@ int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
 void ppuWrite(struct PPU *ppu, unsigned char data);
 unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address);
+unsigned char statusRead(struct PPU *ppu);
 void writeToCtrl(struct PPU *ppu, unsigned char data);
 void writeToOamAddr(struct PPU *ppu, unsigned char data);
 void writeToOamData(struct PPU *ppu, unsigned char data);

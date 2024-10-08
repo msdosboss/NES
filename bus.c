@@ -19,7 +19,7 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr == 0x2002){
-		return statusRead(&(bus->ppu->status));
+		return statusRead(bus->ppu);
 	}
 
 	else if(addr == 0x2004){

@@ -29,8 +29,9 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	memset(ppu->vram, 0, sizeof(ppu->vram));
 	memset(ppu->oamData, 0, sizeof(ppu->oamData));
 	ppu->mirrorMode = rom->mirrorMode;
+	initAddrRegister(&(ppu->addr));
 	ppu->cycles = 0;
-	ppu->scanLines = -1;
+	ppu->scanLines = 0;
 }
 
 int ppuTick(struct PPU *ppu, int cycles){
@@ -49,7 +50,7 @@ int ppuTick(struct PPU *ppu, int cycles){
 			}
 		}
 		if(ppu->scanLines >= 262){
-			ppu->scanLines = -1;
+			ppu->scanLines = 0;
 			ppu->nmiInt = 0;
 			statusVblankOff(&(ppu->status));
 			return 1;
@@ -72,12 +73,12 @@ unsigned char ppuRead(struct PPU *ppu){
 
 	else if(addr >= 0x2000 && addr <= 0x2fff){
 		unsigned char data = ppu->dataBuffer;
-		ppu->dataBuffer = ppu->vram[addr - 0x2000];	//NEED TO IMPLEMENT MIRRORING!!!!
+		ppu->dataBuffer = ppu->vram[mirroredVramAddr(ppu, addr)];	//NEED TO IMPLEMENT MIRRORING!!!!
 		return data;
 	}
 
 	else if(addr >= 0x3000 && addr <= 0x3eff){
-		printf("addr space %x is not suppose to be used!\n", addr);
+		printf("addr space %x is not suppose to be used\n", addr);
 		return -1;
 	}
 
@@ -95,11 +96,11 @@ void ppuWrite(struct PPU *ppu, unsigned char data){
 	}
 
 	if(address >= 0x0 && address < 0x2000){
-		printf("Trying to write to ROM at address %x", address);
+		printf("Trying to write to ROM at address %x\n", address);
 	}
 
 	else if(address >= 0x2000 && address < 0x2fff){
-		ppu->vram[address - 0x2000] = data;
+		ppu->vram[mirroredVramAddr(ppu, address)] = data;
 	}
 
 	else if(address >= 0x3000 && address < 0x3f00){
@@ -134,6 +135,14 @@ unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address){
 
 	return mirroredVram;
 }
+
+unsigned char statusRead(struct PPU *ppu){
+	unsigned char oldStatus = ppu->status;
+	addrLatch(&(ppu->addr));
+	ppu->status &= 0b01111111;
+	return oldStatus;
+}
+
 
 void writeToCtrl(struct PPU *ppu, unsigned char data){
 	int beforeNmiStatus = ppu->controller & 0b10000000;

@@ -141,7 +141,7 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0x04] = initOpcode(0x04, "NOP", 2, 3, ZEROPAGE, UNOFFICIAL);	
 	opcodes[0x44] = initOpcode(0x44, "NOP", 2, 3, ZEROPAGE, UNOFFICIAL);	
 	opcodes[0x64] = initOpcode(0x64, "NOP", 2, 3, ZEROPAGE, UNOFFICIAL);	
-	opcodes[0x14] = initOpcode(0x14, "NOP", 2, 3, ZEROPAGEX, UNOFFICIAL);	
+	opcodes[0x14] = initOpcode(0x14, "NOP", 2, 4, ZEROPAGEX, UNOFFICIAL);	
 	opcodes[0x34] = initOpcode(0x34, "NOP", 2, 4, ZEROPAGEX, UNOFFICIAL);	
 	opcodes[0x54] = initOpcode(0x54, "NOP", 2, 4, ZEROPAGEX, UNOFFICIAL);	
 	opcodes[0x74] = initOpcode(0x74, "NOP", 2, 4, ZEROPAGEX, UNOFFICIAL);	
@@ -204,12 +204,12 @@ void createOpArray(struct Opcode *opcodes){
 	opcodes[0xbb] = initOpcode(0xbb, "LAS", 3, 4, ABSOLUTEY, UNOFFICIAL);
 
 	//LAX
-	opcodes[0xa7] = initOpcode(0xa7, "LAX", 2, 4, ZEROPAGE, UNOFFICIAL);
+	opcodes[0xa7] = initOpcode(0xa7, "LAX", 2, 3, ZEROPAGE, UNOFFICIAL);
 	opcodes[0xb7] = initOpcode(0xb7, "LAX", 2, 4, ZEROPAGEY, UNOFFICIAL);
 	opcodes[0xaf] = initOpcode(0xAF, "LAX", 3, 4, ABSOLUTE, UNOFFICIAL);
 	opcodes[0xbf] = initOpcode(0xbf, "LAX", 3, 4, ABSOLUTEY, UNOFFICIAL);
 	opcodes[0xa3] = initOpcode(0xa3, "LAX", 2, 6, INDIRECTX, UNOFFICIAL);
-	opcodes[0xb3] = initOpcode(0xb3, "LAX", 2, 4, INDIRECTY, UNOFFICIAL);
+	opcodes[0xb3] = initOpcode(0xb3, "LAX", 2, 5, INDIRECTY, UNOFFICIAL);
 
 	//LDA
 	opcodes[0xa9] = initOpcode(0xa9, "LDA", 2, 2, IMMEDIATE, OFFICIAL);

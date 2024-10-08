@@ -15,5 +15,6 @@ unsigned short getAddrRegister(struct AddrRegister *addr);
 void setAddrRegister(struct AddrRegister *addr, unsigned short data);
 void incrementAddrRegister(struct AddrRegister *addr);
 void updateAddrRegister(struct AddrRegister *addr, unsigned char data);
+void addrLatch(struct AddrRegister *addr);
 
 #endif
