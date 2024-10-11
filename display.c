@@ -170,11 +170,12 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 				default:
 	  				break;
 			}
-	}
+		}
+
 	//unsigned char buffer[ROWS][COLLUMNS];
 	int bufferFlag;
 	if((cpu->processorStatus & 0b00010000) == 0){
-		bufferFlag = checkBuffer(frame, buffer);
+		//bufferFlag = checkBuffer(frame, buffer);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
 		char *str = malloc(sizeof(char) * 93);
 		struct Opcode opcodes[0x100];
@@ -190,7 +191,10 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 			bufferFlag = 1;
 			//cpu->bus.ppu->nmiInt = 0;
 		}
-		loadBuffer(frame, buffer);
+		else{
+			bufferFlag = 0;
+		}
+		//loadBuffer(frame, buffer);
 		//struct timespec req = {0, 50000L};
 		//thrd_sleep(&req, NULL);
 	}
