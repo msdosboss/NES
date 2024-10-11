@@ -83,9 +83,11 @@ unsigned char ppuRead(struct PPU *ppu){
 		return -1;
 	}
 
+	else if(addr == 0x3f10 || addr == 0x3f14 || addr == 0x3f18 || addr == 0x3f1c){	//addresses 0x3f10, 0x3f14, 0x3f18, 0x3f1c mirror down to 0x3f00, 0x3f04, 0x3f08, 0x3f0c
+		addr -= 0x10;
+		return ppu->paletteTable[addr - 0x3f00];
+	}
 	else if(addr >= 0x3f00 && addr <= 0x3fff){
-		addr %= 0x20;
-		addr += 0x3f00;
 		return ppu->paletteTable[addr - 0x3f00];
 	}
 }
@@ -107,9 +109,11 @@ unsigned char ppuBusRead(struct PPU *ppu){
 		return -1;
 	}
 
+	else if(addr == 0x3f10 || addr == 0x3f14 || addr == 0x3f18 || addr == 0x3f1c){	//addresses 0x3f10, 0x3f14, 0x3f18, 0x3f1c mirror down to 0x3f00, 0x3f04, 0x3f08, 0x3f0c
+		addr -= 0x10;
+		return ppu->paletteTable[addr - 0x3f00];
+	}
 	else if(addr >= 0x3f00 && addr <= 0x3fff){
-		addr %= 0x20;
-		addr += 0x3f00;
 		return ppu->paletteTable[addr - 0x3f00];
 	}
 }
@@ -131,10 +135,15 @@ void ppuWrite(struct PPU *ppu, unsigned char data){
 	else if(address >= 0x3000 && address < 0x3f00){
 		printf("addr space %x is not suppose to be used!\n", address);
 	}
+	
+	else if(address == 0x3f10 || address == 0x3f14 || address == 0x3f18 || address == 0x3f1c){	//addresses 0x3f10, 0x3f14, 0x3f18, 0x3f1c mirror down to 0x3f00, 0x3f04, 0x3f08, 0x3f0c
+		address -= 0x10;
+		printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
+		ppu->paletteTable[address - 0x3f00] = data;
+	}
 
 	else if(address >= 0x3f00 && address < 0x4000){
-		address %= 0x20;
-		address += 0x3f00;
+		printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
 		ppu->paletteTable[address - 0x3f00] = data;
 	}
 }
@@ -232,6 +241,31 @@ void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 	}
 }
 
+int bgPalette(struct PPU *ppu, int hor, int ver){
+	int attribIndex = 0x3c0 + (ver / 4 * 8 + hor / 4);
+	int attribByte = ppu->vram[attribIndex];	//this is still hardcoding name table
+	if(hor % 4 / 2 == 0 && ver % 4 / 2 == 0){
+		attribByte &= 0b11;
+	}
+
+	else if(hor % 4 / 2 == 1 && ver % 4 / 2 == 0){
+		attribByte >>= 2;
+		attribByte &= 0b11;
+	}
+
+	else if(hor % 4 / 2 == 0 && ver % 4 / 2 == 1){
+		attribByte >>= 4;
+		attribByte &= 0b11;
+	}
+
+	else if(hor % 4 / 2 == 1 && ver % 4 / 2 == 1){
+		attribByte >>= 6;
+		attribByte &= 0b11;
+	}
+
+	return 1 + attribByte * 4;
+}
+
 void parseVram(struct PPU *ppu, struct Frame *frame){
 	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
 	for(int i = 0; i < 0x3c0; i++){
@@ -239,21 +273,22 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
 		//printf("ppu->vram[i] = %x\n", ppu->vram[i]);
+		int bgPaletteOffset = bgPalette(ppu, hor, ver);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
 			unsigned char second = tile[j + 8];
 			for(int k = 7; k >= 0; k--){
 				if(((first & 0b00000001) | (second & 0b00000001)) == 0){
-					frame->tiles[ver][hor].pixels[j][k] = 0;
+					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[0];
 				}
 				else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
-					frame->tiles[ver][hor].pixels[j][k] = 1;
+					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset];
 				}
 				else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = 2;
+					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 1];
 				}
 				else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = 3;
+					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 2];
 				}
 				first >>= 1;
 				second >>= 1;
