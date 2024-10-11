@@ -32,6 +32,7 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	initAddrRegister(&(ppu->addr));
 	ppu->cycles = 0;
 	ppu->scanLines = 0;
+	ppu->nmiInt = 0;
 }
 
 int ppuTick(struct PPU *ppu, int cycles){
@@ -74,6 +75,30 @@ unsigned char ppuRead(struct PPU *ppu){
 	else if(addr >= 0x2000 && addr <= 0x2fff){
 		unsigned char data = ppu->dataBuffer;
 		ppu->dataBuffer = ppu->vram[mirroredVramAddr(ppu, addr)];	//NEED TO IMPLEMENT MIRRORING!!!!
+		return data;
+	}
+
+	else if(addr >= 0x3000 && addr <= 0x3eff){
+		printf("addr space %x is not suppose to be used\n", addr);
+		return -1;
+	}
+
+	else if(addr >= 0x3f00 && addr <= 0x3fff){
+		addr %= 0x20;
+		addr += 0x3f00;
+		return ppu->paletteTable[addr - 0x3f00];
+	}
+}
+
+unsigned char ppuBusRead(struct PPU *ppu){
+	unsigned short addr = getAddrRegister(&(ppu->addr));
+	if(addr >= 0x0 && addr <= 0x1fff){
+		unsigned char data = ppu->dataBuffer;
+		return data;
+	}
+
+	else if(addr >= 0x2000 && addr <= 0x2fff){
+		unsigned char data = ppu->dataBuffer;
 		return data;
 	}
 

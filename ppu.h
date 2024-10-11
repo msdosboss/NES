@@ -39,6 +39,7 @@ struct Frame{
 void initPPU(struct PPU *ppu, struct Rom *rom);
 int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
+unsigned char ppuBusRead(struct PPU *ppu);
 void ppuWrite(struct PPU *ppu, unsigned char data);
 unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address);
 unsigned char statusRead(struct PPU *ppu);
