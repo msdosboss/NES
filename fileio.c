@@ -129,6 +129,8 @@ struct Rom nesCartRead(char *fileName){
 
 	if(!verifyFormat(raw)){
 		printf("%s is not a valid Ines file\n", fileName);
+		fclose(file);
+		free(raw);
 	}
 
 	rom.mapper = (raw[7] & 0b11110000) | (raw[6] >> 4);
@@ -165,11 +167,13 @@ struct Rom nesCartRead(char *fileName){
 	/*for(int i = 0; i < prgRomSize; i++){
 		printf("rom.prgRom[%d] = %x\n", i, rom.prgRom[i]);
 	}*/
+	fclose(file);
+	free(raw);
 
 	return rom;		
 }
 
-struct PaletteEntry *createPalette(char *fileName, int palleteOffset){
+struct PaletteEntry *createPalette(char *fileName, int paletteOffset){
 	struct PaletteEntry *palette = malloc(sizeof(struct PaletteEntry) * 64);
 
 	FILE *file = fopen(fileName, "r");
@@ -183,6 +187,8 @@ struct PaletteEntry *createPalette(char *fileName, int palleteOffset){
 	fseek(file, 0, SEEK_SET);
 	if(size != 0x600){
 		printf("file is not valid .pal file");
+		fclose(file);
+		return NULL;
 	}
 
 	unsigned char *raw = malloc(sizeof(unsigned char) * size); 
@@ -197,20 +203,15 @@ struct PaletteEntry *createPalette(char *fileName, int palleteOffset){
 	}
 
 	for(int i = 0; i < 64; i++){
-		for(int j = 0; j < 3; j++){
-			switch(j){
-				case 0:
-					palette[i].red = raw[(i + j) * (palleteOffset + 1)];
-					break;
-				case 1:
-					palette[i].blue = raw[(i + j) * (palleteOffset + 1)];
-					break;
-				case 2:
-					palette[i].green = raw[(i + j) * (palleteOffset + 1)];
-					break;
-			}
-		}
+		int index = i * 3 + paletteOffset * 64;
+		palette[i].red = raw[index];
+		palette[i].green = raw[index + 1];
+		palette[i].blue = raw[index + 2];	
 	}
+
+
+	free(raw);
+	fclose(file);
 
 	return palette;
 	

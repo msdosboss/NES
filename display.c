@@ -19,7 +19,9 @@
 #define SQUARESIZE WIDTH/COLLUMNS
 
 void rendColor(SDL_Renderer *rend, unsigned char val, struct PaletteEntry *palette){
-	switch(val){
+	
+	SDL_SetRenderDrawColor(rend, palette[val].red, palette[val].green, palette[val].blue, 127);
+	/*switch(val){
 		case 0x00:
 			SDL_SetRenderDrawColor(rend, palette[0x01].red, palette[0x01].blue, palette[0x01].green, 127);
 			break;
@@ -39,7 +41,7 @@ void rendColor(SDL_Renderer *rend, unsigned char val, struct PaletteEntry *palet
 		default:
 			SDL_SetRenderDrawColor(rend, 0, 0, 0, 127);
 			break;
-	}
+	}*/
 }
 
 void loadBuffer(struct Frame *frame, unsigned char **buffer){

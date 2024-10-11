@@ -29,8 +29,6 @@ void nmiInt(struct CPU *cpu){
 
 	cpu->PC = absoluteAddress(cpu, 0xfffa);
 
-	printf("cpu->PC = %x\n", cpu->PC);
-
 	cpu->bus.ppu->nmiInt = 0;
 	
 }
