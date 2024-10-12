@@ -272,7 +272,6 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		int hor = i % 32;
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
-		//printf("ppu->vram[i] = %x\n", ppu->vram[i]);
 		int bgPaletteOffset = bgPalette(ppu, hor, ver);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
