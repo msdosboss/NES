@@ -96,10 +96,10 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 
 	else if(addr == 0x4014){
 		unsigned short addr = 0x100 * (unsigned short)data;
-		printf("bulk write addr = %x\n", addr);
+		//printf("bulk write addr = %x\n", addr);
 		for(int i = 0; i < 256; i++){
 			bus->ppu->oamData[bus->ppu->oamAddr++] = busRead(bus, addr++);
-			printf("bus->ppu->oamData[bus->ppu->oamAddr] = %x\n", bus->ppu->oamData[bus->ppu->oamAddr - 1]);
+			//printf("bus->ppu->oamData[bus->ppu->oamAddr] = %x\n", bus->ppu->oamData[bus->ppu->oamAddr - 1]);
 		}
 	}
 

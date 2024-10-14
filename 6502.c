@@ -2486,7 +2486,7 @@ void loadInstructions(struct CPU *cpu, char *instructions, int instructionsLen){
 
 void cpuLoop(struct CPU *cpu){
 	if(cpu->bus.ppu->nmiInt){
-		printf("NMI int!!!\n");
+		//printf("NMI int!!!\n");
 		nmiInt(cpu);
 		return;
 	}

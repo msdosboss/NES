@@ -44,7 +44,6 @@ int ppuTick(struct PPU *ppu, int cycles){
 		if(ppu->scanLines == 241){
 			statusVblankOn(&(ppu->status));
 			spriteZeroHitOff(&(ppu->status));
-			printf("ppu->status = %b\n", ppu->status); 
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
 				ppu->nmiInt = 1;
@@ -138,12 +137,12 @@ void ppuWrite(struct PPU *ppu, unsigned char data){
 	
 	else if(address == 0x3f10 || address == 0x3f14 || address == 0x3f18 || address == 0x3f1c){	//addresses 0x3f10, 0x3f14, 0x3f18, 0x3f1c mirror down to 0x3f00, 0x3f04, 0x3f08, 0x3f0c
 		address -= 0x10;
-		printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
+		//printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
 		ppu->paletteTable[address - 0x3f00] = data;
 	}
 
 	else if(address >= 0x3f00 && address < 0x4000){
-		printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
+		//printf("Writing %x to paletteTable[%x]\n", data, address - 0x3f00);
 		ppu->paletteTable[address - 0x3f00] = data;
 	}
 }
@@ -271,11 +270,11 @@ int spritePalette(unsigned char paletteIndex){
 }
 
 void parseVram(struct PPU *ppu, struct Frame *frame){
-	for(int i = 0; i < 0x3c0; i++){
+	for(int i = 0; i < 0x3c0; i++){	//background parsing
 		int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
 		int hor = i % 32;
 		int ver = i / 32;
-		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
+		unsigned char *tile = &ppu->chrRom[16 * (ppu->vram[i] + bank)];
 		int bgPaletteOffset = bgPalette(ppu, hor, ver);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
@@ -299,7 +298,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		}
 	}
 
-	for(int i = 0; i < 256; i += 4){
+	/*for(int i = 0; i < 256; i += 4){	//sprite parsing
 		int yPos = ppu->oamData[i];
 		int tileIndex = ppu->oamData[i + 1];
 		unsigned char attribs = ppu->oamData[i + 2];
@@ -315,7 +314,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 
 		int bank = 0x1000 * ((ppu->controller & 0b00001000) >> 3);
 
-		unsigned char *tile = &ppu->chrRom[bank * tileIndex * 16];
+		unsigned char *tile = &ppu->chrRom[(bank + tileIndex) * 16];
 
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
@@ -352,7 +351,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 				}		
 			}
 		}
-	}	
+	}*/	
 }
 
 struct Frame createFrame(){
