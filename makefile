@@ -1,7 +1,7 @@
 OBJS = ppu.o PPURegisters/addr.o PPURegisters/controller.o PPURegisters/mask.o PPURegisters/status.o
 
 all: display.c fileio.c 6502.c bus.c $(OBJS) display.c opcode.c log.c
-	gcc -o main fileio.c 6502.c bus.c $(OBJS) display.c opcode.c log.c `sdl2-config --cflags --libs`
+	gcc -pg -o main fileio.c 6502.c bus.c $(OBJS) display.c opcode.c log.c `sdl2-config --cflags --libs`
 
 ppu.o: ppu.c
 	gcc -c ppu.c -o ppu.o

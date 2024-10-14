@@ -3057,10 +3057,8 @@ void cpuLoop(struct CPU *cpu){
 			break;
 		}
 	}
-	struct Opcode opCodes[0x100];
-	createOpArray(opCodes);
-	busTick(&(cpu->bus), opCodes[opCode].cycles + cpu->extraCycles);
-	cpu->totalCycles += opCodes[opCode].cycles + cpu->extraCycles;
+	busTick(&(cpu->bus), cpu->opCodes[opCode].cycles + cpu->extraCycles);
+	cpu->totalCycles += cpu->opCodes[opCode].cycles + cpu->extraCycles;
 }
 
 void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
@@ -3081,6 +3079,8 @@ void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	//loadInstructions(cpu, instructions, instructionsLen);
 
 	cpu->processorStatus = 0x24;
+	
+	createOpArray(cpu->opCodes);
 }
 
 /*

@@ -20,6 +20,7 @@ struct CPU {
 
 	int extraCycles;
 	int totalCycles;
+	struct Opcode opCodes[0x100];
 };
 void nmiInt(struct CPU *cpu);
 void zeroFlag(struct CPU *cpu, unsigned char reg);

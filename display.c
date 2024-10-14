@@ -113,7 +113,6 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		//createOpArray(opcodes);
 		//cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
 		//printf("%s\n", str);
-		unsigned char opCode = busRead(&(cpu->bus), cpu->PC);
 		int beforeNMI = cpu->bus.ppu->nmiInt;
 		cpuLoop(cpu);
 		int afterNMI = cpu->bus.ppu->nmiInt;
@@ -133,8 +132,6 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 
 	if(bufferFlag){	//check if buff changed
 		/* Clear screen */
-		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-		SDL_RenderClear(rend);
 		for(int i = 0; i < ROWS; i++){
 			for(int j = 0; j < COLLUMNS; j++){
 				unsigned char val = frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8];
