@@ -94,6 +94,14 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 		busWrite(bus, addr, data);
 	}
 
+	else if(addr == 0x4014){
+		unsigned short addr = 0x100 * data;
+		for(int i = 0; i < 256; i++){
+			writeToOamData(bus->ppu, busRead(bus, addr));
+			addr++;
+		}
+	}
+
 	else if(addr >= 0x4000 && addr < 0x401f){	
 		//printf("APU not supported yet\n");
 	}

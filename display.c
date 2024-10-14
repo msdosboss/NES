@@ -10,17 +10,26 @@
 #include "6502.h"
 #include "fileio.h"
 #include "log.h"
+/*
 #define WIDTH 1280
 #define HEIGHT 1200
-#define COLLUMNS 256	//COLLUMNS = WIDTH / 5
-#define ROWS 240	//ROWS = HEIGHT / 5
+*/
+#define WIDTH 1024
+#define HEIGHT 960
+#define COLLUMNS 256
+#define ROWS 240
 #define SIZE 200
 #define FPS 60
 #define SQUARESIZE WIDTH/COLLUMNS
 
 void rendColor(SDL_Renderer *rend, unsigned char val, struct PaletteEntry *palette){
 	
-	SDL_SetRenderDrawColor(rend, palette[val].red, palette[val].green, palette[val].blue, 127);
+	if(val != 255){
+		SDL_SetRenderDrawColor(rend, palette[val].red, palette[val].green, palette[val].blue, 127);
+	}
+	else{	
+		SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+	}
 	/*switch(val){
 		case 0x00:
 			SDL_SetRenderDrawColor(rend, palette[0x01].red, palette[0x01].blue, palette[0x01].green, 127);
