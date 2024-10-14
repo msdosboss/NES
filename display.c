@@ -188,7 +188,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 	if((cpu->processorStatus & 0b00010000) == 0){
 		//bufferFlag = checkBuffer(frame, buffer);
 		busWrite(&(cpu->bus), 0xfe, rand() % 500);	//random number genorator for fe
-		char *str = malloc(sizeof(char) * 93);
+		char *str = malloc(sizeof(char) * 97);
 		struct Opcode opcodes[0x100];
 		createOpArray(opcodes);
 		cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
