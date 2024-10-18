@@ -1,12 +1,20 @@
 #!/bin/bash
 
-echo "$1"
 
 if [ "$1" == "cloud" ]; then
-	echo "cloud active"
 	echo -e "pacman.log\npacman.nes" > .gitignore
+
+	git rm --cached pacman.log pacman.nes
+
+	git add .gitignore
+	git commit -m "Update .gitignore for cloud push"
+	
 	git push -u cloud master
+
 	echo "" > .gitignore
+
+	git add .gitignore
+	git commit "Clear .gitignore after cloud push"
 else
 	git push -u origin master
 fi
