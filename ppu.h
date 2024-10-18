@@ -37,6 +37,7 @@ struct Frame{
 };
 
 void initPPU(struct PPU *ppu, struct Rom *rom);
+int isSprite0Hit(struct PPU *ppu, int cycles);
 int ppuTick(struct PPU *ppu, int cycles);
 unsigned char ppuRead(struct PPU *ppu);
 unsigned char ppuBusRead(struct PPU *ppu);
