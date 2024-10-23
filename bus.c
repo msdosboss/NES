@@ -36,6 +36,11 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 		busRead(bus, addr);
 	}
 
+	else if(addr == 0x4016){
+		printf("reading from 0x4016\n");
+		return joypadRead(bus->joypad);
+	}
+
 	else if(addr >= 0x4000 && addr < 0x401f){	
 		//printf("APU not supported yet");
 		return 0;

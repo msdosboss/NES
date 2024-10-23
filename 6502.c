@@ -3071,6 +3071,10 @@ void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 	cpu->bus.ppu = malloc(sizeof(struct PPU));
 
 	initPPU(cpu->bus.ppu, &(cpu->bus.rom));	
+	
+	cpu->bus.joypad = malloc(sizeof(struct Joypad));
+
+	initJoypad(cpu->bus.joypad);
 
 	cpu->totalCycles = 7;	//reset vector requires 7 clock cycles
 

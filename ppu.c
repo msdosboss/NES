@@ -372,7 +372,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 						else if(flipVert && flipHor){
 							frame->tiles[(yPos / 8) + ((yPos % 8 + (7 - j)) / 8)][(xPos / 8) + ((xPos % 8 + (7 - k)) / 8)].pixels[((yPos % 8 + (7 - j)) % 8)][((xPos % 8 + (7 - k)) % 8)] = pixelPalleteIndex;
 						}*/
-						if(i == 0 && !spriteZeroHit && backgroundBuffer[xPos + xPosOverflow][yPos + yPosOverflow] != ppu->paletteTable[0]){
+						if(i == 0 && !spriteZeroHit && backgroundBuffer[yPos + yPosOverflow][xPos + xPosOverflow] != ppu->paletteTable[0]){
 							spriteZeroHit = 1;
 							ppu->status |= 0b01000000;	//turn on sprite 0 hit flag in status reg
 						}

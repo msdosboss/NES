@@ -4,8 +4,6 @@
 if [ "$1" == "cloud" ]; then
 	echo -e "pacman.log\npacman.nes" > .gitignore
 
-	git rm --cached pacman.log pacman.nes
-
 	git add .gitignore
 	git commit -m "Update .gitignore for cloud push"
 	

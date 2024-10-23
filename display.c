@@ -75,15 +75,31 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
 						case SDL_SCANCODE_LEFT:
+							cpu->bus.joypad->buttonStatus |= LEFTDPAD;
 							break;
 						case SDL_SCANCODE_UP:
 						case SDL_SCANCODE_W:
+							cpu->bus.joypad->buttonStatus |= UPDPAD;
 							break;
 	    					case SDL_SCANCODE_D:
 						case SDL_SCANCODE_RIGHT:
+							cpu->bus.joypad->buttonStatus |= RIGHTDPAD;
 							break;
 						case SDL_SCANCODE_S:
 						case SDL_SCANCODE_DOWN:
+							cpu->bus.joypad->buttonStatus |= DOWNDPAD;
+							break;
+						case SDL_SCANCODE_M:
+							cpu->bus.joypad->buttonStatus |= STARTBUTTON;
+							break;
+						case SDL_SCANCODE_N:
+							cpu->bus.joypad->buttonStatus |= SELECTBUTTON;
+							break;
+						case SDL_SCANCODE_Z:
+							cpu->bus.joypad->buttonStatus |= ABUTTON;
+							break;
+						case SDL_SCANCODE_X:
+							cpu->bus.joypad->buttonStatus |= BBUTTON;
 							break;
 						case SDL_SCANCODE_SPACE:
 							break;
@@ -93,12 +109,32 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 	  				switch (event.key.keysym.scancode){
 						case SDL_SCANCODE_A:
 						case SDL_SCANCODE_LEFT:
+							cpu->bus.joypad->buttonStatus &= ~LEFTDPAD;
 							break;
-						case SDL_SCANCODE_D:
+						case SDL_SCANCODE_UP:
+						case SDL_SCANCODE_W:
+							cpu->bus.joypad->buttonStatus &= ~UPDPAD;
+							break;
+	    					case SDL_SCANCODE_D:
 						case SDL_SCANCODE_RIGHT:
+							cpu->bus.joypad->buttonStatus &= ~RIGHTDPAD;
 							break;
-						default:
+						case SDL_SCANCODE_S:
+						case SDL_SCANCODE_DOWN:
+							cpu->bus.joypad->buttonStatus &= ~DOWNDPAD;
 							break;
+						case SDL_SCANCODE_M:
+							cpu->bus.joypad->buttonStatus &= ~STARTBUTTON;
+							break;
+						case SDL_SCANCODE_N:
+							cpu->bus.joypad->buttonStatus &= ~SELECTBUTTON;
+							break;
+						case SDL_SCANCODE_Z:
+							cpu->bus.joypad->buttonStatus &= ~ABUTTON;
+							break;
+						case SDL_SCANCODE_X:
+							cpu->bus.joypad->buttonStatus &= ~BBUTTON;
+							break;						
 					}
 	  				break;
 				default:
@@ -111,7 +147,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		//char *str = malloc(sizeof(char) * 97);
 		//struct Opcode opcodes[0x100];
 		//createOpArray(opcodes);
-		//cycleLog(cpu, opcodes[busRead(&(cpu->bus), cpu->PC)], str);
+		//cycleLog(cpu, cpu->opCodes[busRead(&(cpu->bus), cpu->PC)], str);
 		//printf("%s\n", str);
 		int beforeNMI = cpu->bus.ppu->nmiInt;
 		cpuLoop(cpu);
