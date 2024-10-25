@@ -27,7 +27,8 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr == 0x2007){
-		return ppuBusRead(bus->ppu);
+		//return ppuBusRead(bus->ppu);
+		return ppuRead(bus->ppu);
 	}
 
 	else if(addr >= 0x2008 && addr < 0x4000){
@@ -37,7 +38,6 @@ unsigned char busRead(struct Bus *bus, unsigned short addr){
 	}
 
 	else if(addr == 0x4016){
-		printf("reading from 0x4016\n");
 		return joypadRead(bus->joypad);
 	}
 
@@ -106,6 +106,10 @@ void busWrite(struct Bus *bus, unsigned short addr, unsigned char data){
 			bus->ppu->oamData[bus->ppu->oamAddr++] = busRead(bus, addr++);
 			//printf("bus->ppu->oamData[bus->ppu->oamAddr] = %x\n", bus->ppu->oamData[bus->ppu->oamAddr - 1]);
 		}
+	}
+
+	else if(addr == 0x4016){
+		joypadWrite(bus->joypad, data);
 	}
 
 	else if(addr >= 0x4000 && addr < 0x401f){	

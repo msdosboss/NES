@@ -147,7 +147,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		//char *str = malloc(sizeof(char) * 97);
 		//struct Opcode opcodes[0x100];
 		//createOpArray(opcodes);
-		//cycleLog(cpu, cpu->opCodes[busRead(&(cpu->bus), cpu->PC)], str);
+		//cycleLog(cpu, cpu->opCodes[busRead(&(cpu->bus), cpu->PC)], str);	running cycle log will cause it to break currently due to double ppu read
 		//printf("%s\n", str);
 		int beforeNMI = cpu->bus.ppu->nmiInt;
 		cpuLoop(cpu);

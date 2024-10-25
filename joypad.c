@@ -7,7 +7,7 @@ void initJoypad(struct Joypad *joypad){
 }
 
 void joypadWrite(struct Joypad *joypad, unsigned char val){
-	joypad->strobe = val;
+	joypad->strobe = (val & 1);
 	if(joypad->strobe){
 		joypad->buttonIndex = 0;
 	}
@@ -20,11 +20,9 @@ unsigned char joypadRead(struct Joypad *joypad){
 
 	unsigned char result = ((joypad->buttonStatus & (1 << joypad->buttonIndex)) >> joypad->buttonIndex);
 
-	if(!joypad->strobe && joypad->buttonIndex < 7){
+	if(!joypad->strobe && joypad->buttonIndex <= 7){
 		joypad->buttonIndex++;
 	}
-
-	printf("result = %d\n", result);
 
 	return result;
 }
