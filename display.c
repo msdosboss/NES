@@ -161,7 +161,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		cpuLoop(cpu);
 		int afterNMI = cpu->bus.ppu->nmiInt;
 		if(beforeNMI != afterNMI){
-			parseVram(cpu->bus.ppu, frame);
+			parseVram(cpu->bus.ppu, frame, 0, 0);
 			bufferFlag = 1;
 		}
 		else{
