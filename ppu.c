@@ -45,14 +45,15 @@ int isSprite0Hit(struct PPU *ppu, int cycles){
 int ppuTick(struct PPU *ppu, int cycles){
 	ppu->cycles += cycles;
 	if(ppu->cycles >= 341){
-		/*if(isSprite0Hit(ppu, ppu->cycles)){
+		if(isSprite0Hit(ppu, ppu->cycles)){
 			ppu->status = (ppu->status | 0b01000000);	//turn on zero hit
-		}*/
+		}
 		ppu->cycles -= 341;
 		ppu->scanLines += 1;
 
 		if(ppu->scanLines == 241){
 			statusVblankOn(&(ppu->status));
+			ppu->status = (ppu->status & 0b10111111);	//turn off zero hit
 			spriteZeroHitOff(&(ppu->status));
 			if(isNMIIntOn(ppu->controller)){
 				statusVblankOn(&(ppu->status));
@@ -279,12 +280,13 @@ int spritePalette(unsigned char paletteIndex){
 	return 0x11 + (paletteIndex * 4);
 }
 
-void parseVram(struct PPU *ppu, struct Frame *frame){
+void parseVram(struct PPU *ppu, struct Frame *frame, int shiftX, int shiftY){
 
 	//unsigned char backgroundBuffer[240][256];
 
+	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
+	
 	for(int i = 0; i < 0x3c0; i++){	//background parsing
-		int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
 		int hor = i % 32;
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
@@ -293,21 +295,20 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 			unsigned char first = tile[j];
 			unsigned char second = tile[j + 8];
 			for(int k = 7; k >= 0; k--){
-				if(((first & 0b00000001) | (second & 0b00000001)) == 0){
-					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[0];
-					//backgroundBuffer[ver * 8 + j][hor * 8 + (7 - k)] = ppu->paletteTable[0];
-				}
-				else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
-					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset];
-					//backgroundBuffer[ver * 8 + j][hor * 8 + (7 - k)] = ppu->paletteTable[bgPaletteOffset];
-				}
-				else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 1];
-					//backgroundBuffer[ver * 8 + j][hor * 8 + (7 - k)] = ppu->paletteTable[bgPaletteOffset + 1];
-				}
-				else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 2];
-					//backgroundBuffer[ver * 8 + j][hor * 8 + (7 - k)] = ppu->paletteTable[bgPaletteOffset + 2];
+				int colorIndex = ((second << 1) | (first & 0b1)) & 0b11;
+				switch(colorIndex){
+					case 0:
+						frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[0];
+						break;
+					case 1:
+						frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset];
+						break;
+					case 2:
+						frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 1];
+						break;
+					case 3:
+						frame->tiles[ver][hor].pixels[j][k] = ppu->paletteTable[bgPaletteOffset + 2];
+						break;
 				}
 				first >>= 1;
 				second >>= 1;
@@ -329,7 +330,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		unsigned char paletteIndex = (attribs & 0b11);
 		int spritePaletteOffset = spritePalette(paletteIndex);
 
-		int bank = 0x1000 * ((ppu->controller & 0b00001000) >> 3);
+		bank = 0x1000 * ((ppu->controller & 0b00001000) >> 3);
 
 		unsigned char *tile = &ppu->chrRom[bank + tileIndex * 16];
 
@@ -354,18 +355,6 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 							pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 2];
 							break;
 					}
-					/*if(((first & 0b00000001) | (second & 0b00000001)) == 0){
-						pixelPalleteIndex = 255;	//255 represents transperent
-					}
-					else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
-						pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset];
-					}
-					else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
-						pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 1];
-					}
-					else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
-						pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 2];
-					}*/
 
 					first >>= 1;
 					second >>= 1;
@@ -375,18 +364,6 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 
 					if(pixelPalleteIndex != 255){
 						frame->tiles[(yPos / 8) + yPosOverflow / 8][(xPos / 8) + xPosOverflow / 8].pixels[yPosOverflow % 8][xPosOverflow % 8] = pixelPalleteIndex;
-						/*if(!flipVert && !flipHor){
-							frame->tiles[(yPos / 8) + ((yPos % 8 + j) / 8)][(xPos / 8) + ((xPos % 8 + k) / 8)].pixels[((yPos % 8 + j) % 8)][((xPos % 8 + k) % 8)] = pixelPalleteIndex;
-						}
-						else if(!flipVert && flipHor){
-							frame->tiles[(yPos / 8) + ((yPos % 8 + j) / 8)][(xPos / 8) + ((xPos % 8 + (7 - k)) / 8)].pixels[((yPos % 8 + j) % 8)][((xPos % 8 + (7 - k)) % 8)] = pixelPalleteIndex;
-						}		
-						else if(flipVert && !flipHor){
-							frame->tiles[(yPos / 8) + ((yPos % 8 + (7 - j)) / 8)][(xPos / 8) + ((xPos % 8 + k) / 8)].pixels[((yPos % 8 + (7 - j)) % 8)][((xPos % 8 + k) % 8)] = pixelPalleteIndex;
-						}		
-						else if(flipVert && flipHor){
-							frame->tiles[(yPos / 8) + ((yPos % 8 + (7 - j)) / 8)][(xPos / 8) + ((xPos % 8 + (7 - k)) / 8)].pixels[((yPos % 8 + (7 - j)) % 8)][((xPos % 8 + (7 - k)) % 8)] = pixelPalleteIndex;
-						}*/
 						/*if(i == 0 && !spriteZeroHit && backgroundBuffer[yPos + yPosOverflow][xPos + xPosOverflow] != ppu->paletteTable[0]){
 							spriteZeroHit = 1;
 							ppu->status |= 0b01000000;	//turn on sprite 0 hit flag in status reg

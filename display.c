@@ -222,7 +222,7 @@ int main(int argc, char* argv[]){
 
 	struct PaletteEntry *palette = createPalette("palette.pal", 0);
 
-	parseChrRom(cpu.bus.ppu, &frame, 1);
+	//parseChrRom(cpu.bus.ppu, &frame, 1);
 
 	SDL_Window *wind = initDisplay();
 
