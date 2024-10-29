@@ -1,5 +1,6 @@
 OBJS = ppu.o PPURegisters/addr.o PPURegisters/controller.o PPURegisters/mask.o PPURegisters/status.o
 
+#add -pg for performance logging
 all: display.c fileio.c 6502.c bus.c $(OBJS) display.c opcode.c log.c
 	gcc -pg -o main fileio.c 6502.c bus.c joypad.c $(OBJS) display.c opcode.c log.c `sdl2-config --cflags --libs`
 

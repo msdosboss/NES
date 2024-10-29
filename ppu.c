@@ -339,7 +339,22 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 				unsigned char second = tile[j + 8];
 				for(int k = 7; k >= 0; k--){
 					int pixelPalleteIndex;
-					if(((first & 0b00000001) | (second & 0b00000001)) == 0){
+					int colorIndex = ((second << 1) | (first & 0b1)) & 0b11;
+					switch(colorIndex){
+						case 0:
+							pixelPalleteIndex = 255;
+							break;
+						case 1:
+							pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset];
+							break;
+						case 2:
+							pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 1];
+							break;
+						case 3:
+							pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 2];
+							break;
+					}
+					/*if(((first & 0b00000001) | (second & 0b00000001)) == 0){
 						pixelPalleteIndex = 255;	//255 represents transperent
 					}
 					else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
@@ -350,7 +365,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 					}
 					else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
 						pixelPalleteIndex = ppu->paletteTable[spritePaletteOffset + 2];
-					}
+					}*/
 
 					first >>= 1;
 					second >>= 1;

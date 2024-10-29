@@ -167,7 +167,6 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 	}
 
 	if(bufferFlag){	//check if buff changed
-		/* Clear screen */
 		for(int i = 0; i < ROWS; i++){
 			for(int j = 0; j < COLLUMNS; j++){
 				unsigned char val = frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8];
@@ -181,7 +180,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		}
 		SDL_UpdateTexture(texture, NULL, pixels, sizeof(Uint32) * COLLUMNS);
 		/* Draw to window and loop */
-		SDL_RenderClear(rend);
+		//SDL_RenderClear(rend);
 		SDL_RenderCopy(rend, texture, NULL, NULL);
 		SDL_RenderPresent(rend);
 		//SDL_Delay(1000/FPS);
