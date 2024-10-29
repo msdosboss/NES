@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <SDL.h>
+#include <SDL_image.h>
 #include <unistd.h>
 #include <threads.h>
 #include "6502.h"
@@ -21,6 +22,13 @@
 #define SIZE 200
 #define FPS 60
 #define SQUARESIZE WIDTH/COLLUMNS
+
+void graggleIntro(SDL_Window *wind, SDL_Renderer *rend){
+	SDL_Texture *graggle = IMG_LoadTexture(rend, "img/graggleNes.png");
+	SDL_RenderCopy(rend, graggle, NULL, NULL);
+	SDL_RenderPresent(rend);
+	SDL_Delay(5000);
+}
 
 SDL_Window *initDisplay(){
 	/* Initializes the timer, audio, video, joystick,
@@ -59,9 +67,9 @@ SDL_Renderer *initRender(SDL_Window *wind){
 
 int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Frame *frame, struct PaletteEntry *palette){
 	/* Main loop */
+	graggleIntro(wind, rend);
 	bool running = true;
 	SDL_Texture *texture = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, COLLUMNS, ROWS);
-	Uint32 *pixels = malloc(sizeof(Uint32) * ROWS * COLLUMNS);
 
 	SDL_Event event;
 	while (running){
@@ -167,6 +175,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 	}
 
 	if(bufferFlag){	//check if buff changed
+		Uint32 *pixels = malloc(sizeof(Uint32) * ROWS * COLLUMNS);
 		for(int i = 0; i < ROWS; i++){
 			for(int j = 0; j < COLLUMNS; j++){
 				unsigned char val = frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8];
@@ -183,11 +192,11 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		//SDL_RenderClear(rend);
 		SDL_RenderCopy(rend, texture, NULL, NULL);
 		SDL_RenderPresent(rend);
+		free(pixels);
 		//SDL_Delay(1000/FPS);
 		}
 	}
 	/* Release resources */
-	free(pixels);
 	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(wind);
