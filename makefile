@@ -1,4 +1,4 @@
-OBJS = ppu.o PPURegisters/addr.o PPURegisters/controller.o PPURegisters/mask.o PPURegisters/status.o
+OBJS = ppu.o PPURegisters/addr.o PPURegisters/controller.o PPURegisters/mask.o PPURegisters/status.o PPURegisters/scroll.o
 
 #add -pg for performance logging
 all: display.c fileio.c 6502.c bus.c $(OBJS) display.c opcode.c log.c
@@ -18,6 +18,9 @@ PPURegisters/mask.o: PPURegisters/mask.c
 
 PPURegisters/status.o: PPURegisters/status.c
 	gcc -c PPURegisters/status.c -o PPURegisters/status.o
+
+PPURegisters/scroll.o: PPURegisters/scroll.c
+	gcc -c PPURegisters/scroll.c -o PPURegisters/scroll.o
 
 clean:
 	rm -f main $(OBJS)

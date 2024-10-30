@@ -29,3 +29,22 @@ int vramAddrIncAmount(unsigned char ppuController){
 int isNMIIntOn(unsigned char ppuController){
 	return ppuController & 0b10000000;
 }
+
+unsigned short nametableAddr(unsigned char ppuController){
+	unsigned char result = ((ppuController & 0b00000010) | (ppuController & 0b00000001));
+
+	switch(result){
+		case 0:
+			return 0x2000;
+			break;
+		case 1:
+			return 0x2400;
+			break;
+		case 2:
+			return 0x2800;
+			break;
+		case 3:
+			return 0x2c00;
+			break;
+	}
+}

@@ -10,10 +10,10 @@ struct PPU{
 	int mirrorMode;
 
 	struct AddrRegister addr;
+	struct ScrollRegister scroll;
 	unsigned char status;
 	unsigned char controller;
 	unsigned char mask;
-	unsigned char scroll;
 	unsigned char dataBuffer;
 
 	int scanLines;
@@ -30,6 +30,7 @@ void initPPU(struct PPU *ppu, struct Rom *rom){
 	memset(ppu->oamData, 0, sizeof(ppu->oamData));
 	ppu->mirrorMode = rom->mirrorMode;
 	initAddrRegister(&(ppu->addr));
+	initScrollRegister(&(ppu->scroll));
 	ppu->cycles = 0;
 	ppu->scanLines = 0;
 	ppu->nmiInt = 0;
@@ -183,6 +184,7 @@ unsigned short mirroredVramAddr(struct PPU *ppu, unsigned short address){
 unsigned char statusRead(struct PPU *ppu){
 	unsigned char oldStatus = ppu->status;
 	addrLatch(&(ppu->addr));
+	scrollLatch(&(ppu->scroll));
 	ppu->status &= 0b01111111;
 	return oldStatus;
 }
@@ -207,7 +209,7 @@ void writeToOamData(struct PPU *ppu, unsigned char data){
 }
 
 void writeToScroll(struct PPU *ppu, unsigned char data){
-	ppu->scroll = data;
+	scrollWrite(&(ppu->scroll), data);
 }
 
 /*void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry){
@@ -251,9 +253,9 @@ void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 	}
 }
 
-int bgPalette(struct PPU *ppu, int hor, int ver){
+int bgPalette(struct PPU *ppu, unsigned char *nameTable, int hor, int ver){
 	int attribIndex = 0x3c0 + (ver / 4 * 8 + hor / 4);
-	int attribByte = ppu->vram[attribIndex];	//this is still hardcoding name table
+	int attribByte = nameTable[attribIndex];	//this is still hardcoding name table
 	if(hor % 4 / 2 == 0 && ver % 4 / 2 == 0){
 		attribByte &= 0b11;
 	}
@@ -280,17 +282,92 @@ int spritePalette(unsigned char paletteIndex){
 	return 0x11 + (paletteIndex * 4);
 }
 
-void parseVram(struct PPU *ppu, struct Frame *frame, int shiftX, int shiftY){
+void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY){
+
+	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
+
+	for(int i = 0; i < 0x3c0; i++){	//background parsing
+		int hor = i % 32;
+		int ver = i / 32;
+		unsigned char *tile = &ppu->chrRom[16 * nameTable[i] + bank];
+		int bgPaletteOffset = bgPalette(ppu, nameTable, hor, ver);
+		for(int j = 0; j < 0x8; j++){
+			unsigned char first = tile[j];
+			unsigned char second = tile[j + 8];
+			for(int k = 7; k >= 0; k--){
+				int colorIndex = ((second << 1) | (first & 0b1)) & 0b11;
+
+				first >>= 1;
+				second >>= 1;
+				
+				int pixelX = hor * 8 + k;
+				int pixelY = ver * 8 + j;
+
+				if(pixelX < rect.x1 || pixelX >= rect.x2 || pixelY < rect.y1 || pixelY >= rect.y2){
+					continue;
+				}
+
+				switch(colorIndex){
+					case 0:
+						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[0];
+						break;
+					case 1:
+						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset];
+						break;
+					case 2:
+						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 1];
+						break;
+					case 3:
+						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 2];
+						break;
+				}
+			}
+		}
+	}
+
+}
+
+void parseVram(struct PPU *ppu, struct Frame *frame){
+
+	int scrollX = ppu->scroll.scrollX;
+	int scrollY = ppu->scroll.scrollY;
+
+	unsigned char *mainNametable;
+	unsigned char *secondNametable;
+
+	if((ppu->mirrorMode == VERTICAL && nametableAddr(ppu->controller) == 0x2000) || (ppu->mirrorMode == VERTICAL && nametableAddr(ppu->controller) == 0x2800) || (ppu->mirrorMode == HORIZONTAL && nametableAddr(ppu->controller) == 0x2000) || (ppu->mirrorMode == HORIZONTAL && nametableAddr(ppu->controller) == 0x2400)){
+		mainNametable = ppu->vram;
+		secondNametable = &ppu->vram[0x400];
+	}
+	else{
+		mainNametable = &ppu->vram[400];
+		secondNametable = ppu->vram;
+	}
+
+	struct ViewableRect mainRect = {scrollX, scrollY, 256, 240};
+
+	
+	parseNametable(ppu, frame, mainNametable, mainRect, -scrollX, -scrollY);
+
+	if(scrollX > 0){
+		struct ViewableRect secondRect = {0, 0, scrollX, 240};
+		parseNametable(ppu, frame, secondNametable, secondRect, 256 - scrollX, 0);
+	}
+
+	if(scrollY > 0){
+		struct ViewableRect secondRect = {0, 0, 256, scrollY};
+		parseNametable(ppu, frame, secondNametable, secondRect, 0, 240 - scrollY);
+	}
 
 	//unsigned char backgroundBuffer[240][256];
 
-	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
+	/*int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
 	
 	for(int i = 0; i < 0x3c0; i++){	//background parsing
 		int hor = i % 32;
 		int ver = i / 32;
 		unsigned char *tile = &ppu->chrRom[16 * ppu->vram[i] + bank];
-		int bgPaletteOffset = bgPalette(ppu, hor, ver);
+		int bgPaletteOffset = bgPalette(ppu, ppu->vram, hor, ver);
 		for(int j = 0; j < 0x8; j++){
 			unsigned char first = tile[j];
 			unsigned char second = tile[j + 8];
@@ -314,9 +391,9 @@ void parseVram(struct PPU *ppu, struct Frame *frame, int shiftX, int shiftY){
 				second >>= 1;
 			}
 		}
-	}
+	}*/
 
-	int spriteZeroHit = 0;
+	//int spriteZeroHit = 0;
 
 	for(int i = 0; i < 256; i += 4){	//sprite parsing
 		int yPos = ppu->oamData[i];
@@ -330,7 +407,7 @@ void parseVram(struct PPU *ppu, struct Frame *frame, int shiftX, int shiftY){
 		unsigned char paletteIndex = (attribs & 0b11);
 		int spritePaletteOffset = spritePalette(paletteIndex);
 
-		bank = 0x1000 * ((ppu->controller & 0b00001000) >> 3);
+		int bank = 0x1000 * ((ppu->controller & 0b00001000) >> 3);
 
 		unsigned char *tile = &ppu->chrRom[bank + tileIndex * 16];
 

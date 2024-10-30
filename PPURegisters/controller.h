@@ -14,5 +14,6 @@
 
 int vramAddrIncAmount(unsigned char ppuController);
 int isNMIIntOn(unsigned char ppuController);
+unsigned short nametableAddr(unsigned char ppuController);
 
 #endif
