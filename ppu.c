@@ -340,12 +340,11 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 		secondNametable = &ppu->vram[0x400];
 	}
 	else{
-		mainNametable = &ppu->vram[400];
+		mainNametable = &ppu->vram[0x400];
 		secondNametable = ppu->vram;
 	}
 
 	struct ViewableRect mainRect = {scrollX, scrollY, 256, 240};
-
 	
 	parseNametable(ppu, frame, mainNametable, mainRect, -scrollX, -scrollY);
 
