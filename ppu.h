@@ -43,6 +43,10 @@ struct Frame{
 	struct Tile tiles[30][32];
 };
 
+struct PixelFrame{
+	unsigned char pixels[240][256];
+};
+
 void initPPU(struct PPU *ppu, struct Rom *rom);
 int isSprite0Hit(struct PPU *ppu, int cycles);
 int ppuTick(struct PPU *ppu, int cycles);
@@ -59,6 +63,7 @@ void writeToScroll(struct PPU *ppu, unsigned char data);
 void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank);
 int bgPalette(struct PPU *ppu, unsigned char *nameTable, int hor, int ver);
 int spritePalette(unsigned char paletteIndex);
+void pixelFrameToFrame(struct PixelFrame pixelFrame, struct Frame *frame);
 void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY);
 void parseVram(struct PPU *ppu, struct Frame *frame);
 struct Frame createFrame();

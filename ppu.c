@@ -282,9 +282,19 @@ int spritePalette(unsigned char paletteIndex){
 	return 0x11 + (paletteIndex * 4);
 }
 
+void pixelFrameToFrame(struct PixelFrame pixelFrame, struct Frame *frame){
+	for(int i = 0; i < 240; i++){
+		for(int j = 0; j < 256; j++){
+			frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8] = pixelFrame.pixels[i][j];
+		}
+	}
+}
+
 void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY){
 
 	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
+
+	struct PixelFrame pixelFrame;
 
 	for(int i = 0; i < 0x3c0; i++){	//background parsing
 		int hor = i % 32;
@@ -309,21 +319,27 @@ void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTab
 
 				switch(colorIndex){
 					case 0:
-						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[0];
+						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[0];
+						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[0];
 						break;
 					case 1:
-						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset];
+						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset];
+						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset];
 						break;
 					case 2:
-						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 1];
+						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 1];
+						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 1];
 						break;
 					case 3:
-						frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 2];
+						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 2];
+						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 2];
 						break;
 				}
 			}
 		}
 	}
+
+	pixelFrameToFrame(pixelFrame, frame);
 
 }
 
