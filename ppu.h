@@ -60,11 +60,9 @@ void writeToOamAddr(struct PPU *ppu, unsigned char data);
 void writeToOamData(struct PPU *ppu, unsigned char data);
 void writeToScroll(struct PPU *ppu, unsigned char data);
 //void setPixel(struct Pixel *pixel, struct PaletteEntry paletteEntry);
-void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank);
+void parseChrRom(struct PPU *ppu, struct PixelFrame *pixelFrame, int bank);
 int bgPalette(struct PPU *ppu, unsigned char *nameTable, int hor, int ver);
 int spritePalette(unsigned char paletteIndex);
-void pixelFrameToFrame(struct PixelFrame pixelFrame, struct Frame *frame);
-void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY);
-void parseVram(struct PPU *ppu, struct Frame *frame);
-struct Frame createFrame();
+void parseNametable(struct PPU *ppu, struct PixelFrame *pixelFrame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY);
+void parseVram(struct PPU *ppu, struct PixelFrame *pixelFrame);
 #endif

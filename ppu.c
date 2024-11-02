@@ -218,7 +218,7 @@ void writeToScroll(struct PPU *ppu, unsigned char data){
 	pixel->green = paletteEntry.green;
 }*/
 
-void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
+void parseChrRom(struct PPU *ppu, struct PixelFrame *pixelFrame, int bank){
 	bank *= 0x1000;
 	int hor = 0;
 	int ver = 0;
@@ -228,16 +228,20 @@ void parseChrRom(struct PPU *ppu, struct Frame *frame, int bank){
 			unsigned char second = ppu->chrRom[i + j + bank + 8];
 			for(int k = 7; k >= 0; k--){
 				if(((first & 0b00000001) | (second & 0b00000001)) == 0){
-					frame->tiles[ver][hor].pixels[j][k] = 0;
+					//frame->tiles[ver][hor].pixels[j][k] = 0;
+					pixelFrame->pixels[ver * 8 + j][hor * 8 + k] = 0;
 				}
 				else if((((first & 0b00000001) == 1) && ((second & 0b00000001) == 0))){
-					frame->tiles[ver][hor].pixels[j][k] = 1;
+					//frame->tiles[ver][hor].pixels[j][k] = 1;
+					pixelFrame->pixels[ver * 8 + j][hor * 8 + k] = 1;
 				}
 				else if(((first & 0b00000001) == 0) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = 2;
+					//frame->tiles[ver][hor].pixels[j][k] = 2;
+					pixelFrame->pixels[ver * 8 + j][hor * 8 + k] = 2;
 				}
 				else if(((first & 0b00000001) == 1) && ((second & 0b00000001) == 1)){
-					frame->tiles[ver][hor].pixels[j][k] = 3;
+					//frame->tiles[ver][hor].pixels[j][k] = 3;
+					pixelFrame->pixels[ver * 8 + j][hor * 8 + k] = 3;
 				}
 				first >>= 1;
 				second >>= 1;
@@ -282,19 +286,9 @@ int spritePalette(unsigned char paletteIndex){
 	return 0x11 + (paletteIndex * 4);
 }
 
-void pixelFrameToFrame(struct PixelFrame pixelFrame, struct Frame *frame){
-	for(int i = 0; i < 240; i++){
-		for(int j = 0; j < 256; j++){
-			frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8] = pixelFrame.pixels[i][j];
-		}
-	}
-}
-
-void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY){
+void parseNametable(struct PPU *ppu, struct PixelFrame *pixelFrame, unsigned char *nameTable, struct ViewableRect rect, int shiftX, int shiftY){
 
 	int bank = 0x1000 * ((ppu->controller & 0b00010000) >> 4);	//checking if bit is on in the controller register
-
-	struct PixelFrame pixelFrame;
 
 	for(int i = 0; i < 0x3c0; i++){	//background parsing
 		int hor = i % 32;
@@ -317,33 +311,33 @@ void parseNametable(struct PPU *ppu, struct Frame *frame, unsigned char *nameTab
 					continue;
 				}
 
+				int xNegativeOffset = pixelX % 8 + k;
+
 				switch(colorIndex){
 					case 0:
-						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[0];
-						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[0];
+						pixelFrame->pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[0];
+						//frame->tiles[ver + shiftY / 8][hor + xNegativeOffset / 8 + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[0];
 						break;
 					case 1:
-						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset];
-						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset];
+						pixelFrame->pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset];
+						//frame->tiles[ver + shiftY / 8][hor + xNegativeOffset / 8 + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset];
 						break;
 					case 2:
-						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 1];
-						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 1];
+						pixelFrame->pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 1];
+						//frame->tiles[ver + shiftY / 8][hor + xNegativeOffset / 8 + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 1];
 						break;
 					case 3:
-						pixelFrame.pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 2];
-						//frame->tiles[ver + shiftY / 8][hor + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 2];
+						pixelFrame->pixels[pixelY + shiftY][pixelX + shiftX] = ppu->paletteTable[bgPaletteOffset + 2];
+						//frame->tiles[ver + shiftY / 8][hor + xNegativeOffset / 8 + shiftX / 8].pixels[j + (shiftY % 8)][k + (shiftX % 8)] = ppu->paletteTable[bgPaletteOffset + 2];
 						break;
 				}
 			}
 		}
 	}
 
-	pixelFrameToFrame(pixelFrame, frame);
-
 }
 
-void parseVram(struct PPU *ppu, struct Frame *frame){
+void parseVram(struct PPU *ppu, struct PixelFrame *pixelFrame){
 
 	int scrollX = ppu->scroll.scrollX;
 	int scrollY = ppu->scroll.scrollY;
@@ -362,16 +356,16 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 
 	struct ViewableRect mainRect = {scrollX, scrollY, 256, 240};
 	
-	parseNametable(ppu, frame, mainNametable, mainRect, -scrollX, -scrollY);
+	parseNametable(ppu, pixelFrame, mainNametable, mainRect, -scrollX, -scrollY);
 
 	if(scrollX > 0){
 		struct ViewableRect secondRect = {0, 0, scrollX, 240};
-		parseNametable(ppu, frame, secondNametable, secondRect, 256 - scrollX, 0);
+		parseNametable(ppu, pixelFrame, secondNametable, secondRect, 256 - scrollX, 0);
 	}
 
 	if(scrollY > 0){
 		struct ViewableRect secondRect = {0, 0, 256, scrollY};
-		parseNametable(ppu, frame, secondNametable, secondRect, 0, 240 - scrollY);
+		parseNametable(ppu, pixelFrame, secondNametable, secondRect, 0, 240 - scrollY);
 	}
 
 	//unsigned char backgroundBuffer[240][256];
@@ -451,11 +445,12 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 					first >>= 1;
 					second >>= 1;
 					
-					int xPosOverflow = !flipHor ? (xPos % 8 + k) : (xPos % 8 + (7 - k));
-					int yPosOverflow = !flipVert ? (yPos % 8 + j) : (yPos % 8 + (7 - j));
+					int xFlip = !flipHor ? k : 7 - k;
+					int yFlip = !flipVert ? j : 7 - j;
 
 					if(pixelPalleteIndex != 255){
-						frame->tiles[(yPos / 8) + yPosOverflow / 8][(xPos / 8) + xPosOverflow / 8].pixels[yPosOverflow % 8][xPosOverflow % 8] = pixelPalleteIndex;
+						//frame->tiles[(yPos / 8) + yPosOverflow / 8][(xPos / 8) + xPosOverflow / 8].pixels[yPosOverflow % 8][xPosOverflow % 8] = pixelPalleteIndex;
+						pixelFrame->pixels[yPos + yFlip][xPos + xFlip] = pixelPalleteIndex;
 						/*if(i == 0 && !spriteZeroHit && backgroundBuffer[yPos + yPosOverflow][xPos + xPosOverflow] != ppu->paletteTable[0]){
 							spriteZeroHit = 1;
 							ppu->status |= 0b01000000;	//turn on sprite 0 hit flag in status reg
@@ -467,16 +462,3 @@ void parseVram(struct PPU *ppu, struct Frame *frame){
 	}	
 }
 
-struct Frame createFrame(){
-	struct Frame frame;
-	for(int i = 0; i < 30; i++){
-		for(int j = 0; j < 32; j++){
-			for(int ii = 0; ii < 8; ii++){
-				for(int jj = 0; jj < 8; jj++){
-					frame.tiles[i][j].pixels[ii][jj] = 5;
-				}
-			}
-		}
-	}
-	return frame;
-}

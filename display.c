@@ -65,7 +65,7 @@ SDL_Renderer *initRender(SDL_Window *wind){
 	return rend;
 }
 
-int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Frame *frame, struct PaletteEntry *palette){
+int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct PixelFrame *pixelFrame, struct PaletteEntry *palette){
 	/* Main loop */
 	graggleIntro(wind, rend);
 	bool running = true;
@@ -161,7 +161,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		cpuLoop(cpu);
 		int afterNMI = cpu->bus.ppu->nmiInt;
 		if(beforeNMI != afterNMI){
-			parseVram(cpu->bus.ppu, frame);
+			parseVram(cpu->bus.ppu, pixelFrame);
 			bufferFlag = 1;
 		}
 		else{
@@ -178,7 +178,8 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Fr
 		Uint32 *pixels = malloc(sizeof(Uint32) * ROWS * COLLUMNS);
 		for(int i = 0; i < ROWS; i++){
 			for(int j = 0; j < COLLUMNS; j++){
-				unsigned char val = frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8];
+				//unsigned char val = frame->tiles[i / 8][j / 8].pixels[i % 8][j % 8];
+				unsigned char val = pixelFrame->pixels[i][j];
 				if(val != 255){
 					pixels[j + i * COLLUMNS] = (palette[val].red << 24) | (palette[val].green << 16) | (palette[val].blue << 8) | 255;
 				}
@@ -214,11 +215,11 @@ int main(int argc, char* argv[]){
 
 	struct CPU cpu = {0};
 
+	struct PixelFrame pixelFrame;
+
 	cpu.bus.rom = nesCartRead(argv[1]);
 
 	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
-
-	struct Frame frame = createFrame();
 
 	struct PaletteEntry *palette = createPalette("palette.pal", 0);
 
@@ -228,5 +229,5 @@ int main(int argc, char* argv[]){
 
 	SDL_Renderer *rend = initRender(wind);
 
-	displayLoop(wind, rend, &cpu, &frame, palette);
+	displayLoop(wind, rend, &cpu, &pixelFrame, palette);
 }
