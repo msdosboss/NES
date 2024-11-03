@@ -93,7 +93,8 @@ void txs(struct CPU *cpu);
 void tya(struct CPU *cpu);
 void loadInstruction(struct CPU *cpu, char *instruction, int instructionsLen);
 void cpuLoop(struct CPU *cpu);
-void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen);
+void initCPU(struct CPU *cpu);
+void freeCPU(struct CPU *cpu);
 
 #endif
 

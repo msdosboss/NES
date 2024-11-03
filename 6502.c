@@ -3061,7 +3061,7 @@ void cpuLoop(struct CPU *cpu){
 	cpu->totalCycles += cpu->opCodes[opCode].cycles + cpu->extraCycles;
 }
 
-void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
+void initCPU(struct CPU *cpu){
 	//cpu->PC = 0xc000;
 
 	cpu->PC = absoluteAddress(cpu, 0xfffc);
@@ -3080,11 +3080,15 @@ void initCPU(struct CPU *cpu, unsigned char *instructions, int instructionsLen){
 
 	busTick(&(cpu->bus), 7);
 
-	//loadInstructions(cpu, instructions, instructionsLen);
-
 	cpu->processorStatus = 0x24;
 	
 	createOpArray(cpu->opCodes);
+}
+
+void freeCPU(struct CPU *cpu){
+	freeRom(&(cpu->bus.rom));
+	free(cpu->bus.ppu);
+	free(cpu->bus.joypad);
 }
 
 /*

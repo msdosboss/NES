@@ -141,26 +141,24 @@ struct Rom nesCartRead(char *fileName){
 
 	mirrorMode(&rom, raw);
 
-	long prgRomSize = raw[4] * PRGROMPAGESIZE;
-	long chrRomSize = raw[5] * CHRROMPAGESIZE;
+	rom.prgRomLen = raw[4] * PRGROMPAGESIZE;
+	rom.chrRomLen = raw[5] * CHRROMPAGESIZE;
 
 	int trainerOffset = trainerFlag(raw); 
 
 	long prgRomStart = 16 + trainerOffset;
-	long chrRomStart = prgRomStart + prgRomSize;
+	long chrRomStart = prgRomStart + rom.prgRomLen;
 
-	rom.prgRom = malloc(sizeof(unsigned char) * prgRomSize);
-	rom.chrRom = malloc(sizeof(unsigned char) * chrRomSize);
-
-	rom.prgRomLen = prgRomSize;
+	rom.prgRom = malloc(sizeof(unsigned char) * rom.prgRomLen);
+	rom.chrRom = malloc(sizeof(unsigned char) * rom.chrRomLen);
 
 	int j = 0;
-	for(int i = prgRomStart; i < prgRomStart + prgRomSize; i++){
+	for(int i = prgRomStart; i < prgRomStart + rom.prgRomLen; i++){
 		rom.prgRom[j++] = raw[i];
 	}
 
 	j = 0;
-	for(int i = chrRomStart; i < chrRomStart + chrRomSize; i++){
+	for(int i = chrRomStart; i < chrRomStart + rom.chrRomLen; i++){
 		rom.chrRom[j++] = raw[i];
 	}
 
@@ -171,6 +169,11 @@ struct Rom nesCartRead(char *fileName){
 	free(raw);
 
 	return rom;		
+}
+
+void freeRom(struct Rom *rom){
+	free(rom->prgRom);
+	free(rom->chrRom);
 }
 
 struct PaletteEntry *createPalette(char *fileName, int paletteOffset){

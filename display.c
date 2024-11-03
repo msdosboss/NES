@@ -201,6 +201,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Pi
 	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(wind);
+	freeCPU(cpu);
 	SDL_Quit();
 	return 0;
 
@@ -219,7 +220,7 @@ int main(int argc, char* argv[]){
 
 	cpu.bus.rom = nesCartRead(argv[1]);
 
-	initCPU(&cpu, cpu.bus.rom.prgRom, cpu.bus.rom.prgRomLen);
+	initCPU(&cpu);
 
 	struct PaletteEntry *palette = createPalette("palette.pal", 0);
 

@@ -17,6 +17,7 @@ struct Rom{
 	unsigned char *prgRom;
 	long prgRomLen;
 	unsigned char *chrRom;
+	long chrRomLen;
 	unsigned char mapper;
 	int mirrorMode;
 };
@@ -34,6 +35,7 @@ int verifyFormat(unsigned char *raw);
 void mirrorMode(struct Rom *rom, unsigned char *raw);
 int trainerFlag(unsigned char *raw);
 struct Rom nesCartRead(char *fileName);
+void freeRom(struct Rom *rom);
 struct PaletteEntry *createPalette(char *fileName, int paletteOffset);
 
 #endif
