@@ -202,6 +202,7 @@ int displayLoop(SDL_Window *wind, SDL_Renderer *rend, struct CPU *cpu, struct Pi
 	SDL_DestroyRenderer(rend);
 	SDL_DestroyWindow(wind);
 	freeCPU(cpu);
+	free(palette);
 	SDL_Quit();
 	return 0;
 
